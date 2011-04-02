@@ -35,7 +35,7 @@
         // @param {Function} a, target function referrer.
         // @param {Boolean} b, return function stacktrace list if true; else return string.
         // @param {Boolean} ctx, with function context in the last function if true.
-        stack : function(a,b,c){
+        stack : function(a,b,ctx){
             var s=[], t="", e="", i=0;
             a=a&&a.callee?a:arguments.caller;
             if(!a){return b?s:"[global]";}
@@ -48,8 +48,13 @@
             }
             for (i=0,l=s.length,p=""; i<l; i++){
                 p=S.repeat("  ", i);
-                t = t+p+"function "+s[i]+"(){"+(i==l-1?"":"\n");
-                e = (i==l-1?"":"\n"+p)+"}"+e;
+                if(ctx && i==l-1){
+                    t = t+p+a.callee.toString();
+                    e = "\n"+p+e;
+                }else{
+                    t = t+p+"function "+s[i]+"(){"+(i==l-1?"":"\n");
+                    e = (i==l-1?"":"\n"+p)+"}"+e;
+                }
             }
             return b?s:t+e;
         }
@@ -62,7 +67,7 @@
     };
 
     window.onerror = function(msg, file, line){
-        D.error(file, line, msg, F.stack(arguments.callee.caller));
+        D.error(file, line, msg, F.stack(arguments.callee.caller, false, true));
         return !D.debug;
     };
 })();
