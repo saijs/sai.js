@@ -8,14 +8,59 @@
 <meta name="author" content="闲耘™ (hotoo.cn[AT]gmail.com)" />
 <link rel="icon" href="favicon.ico" type="image/x-icon" />
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="monitor.css" media="all" />
 <title>Demo</title>
 </head>
 <body>
+    <button onclick="throw new Error('this is an error.')">new Error.</button>
+    <br />
+
+    <button onclick="throw new EvalError('this is eval error.')">new EvalError.</button>
+    <button onclick="eval('a()')">new EvalError.</button>
+    <br />
+
+    <button onclick="throw new RangeError('this is range error.')">new RangeError.</button>
+    <br />
+
+    <button onclick="throw new ReferenceError('this is reference error.')">new ReferenceError.</button>
+    <button onclick="throwError();">new ReferenceError.</button>
+    <br />
+
+    <button onclick="throw new SyntaxError('this is a syntax error.')">new SyntaxError.</button>
+    <br />
+
+    <button onclick="throw new TypeError('this is a type error.')">new TypeError.</button>
+    <br />
+
+    <button onclick="throw new URIError('this is a uri error.')">new URIError.</button>
+    <br />
+    <button onclick="test();">throw a function error.</button>
     <script type="text/javascript" src="monitor.js"></script>
     <script type="text/javascript">/*<![CDATA[*/
+        function test(){
+            throw new Error("n is not number.")
+        }
+        function throwError(){
+            try{
+                throw new SyntaxError("syntax error.")
+            }catch(ex){
+                alert(ex.message);
+                throw ex;
+            }
+        }
         document.documentElement.ondblclick = function(){
-            throw new Error("click error.");
+            Monitor.show();
         };
+
+        document.write("<br />")
+        document.write("<br />navigator.appCodeName: "+navigator.appCodeName);
+        document.write("<br />navigator.appName: "+navigator.appName);
+        document.write("<br />navigator.appVersion: "+navigator.appVersion);
+        var s="";
+        for(var k in navigator){
+            s+=k+":"+navigator[k]+"<br />";
+        }
+        document.write(s);
     /*]]>*/</script>
 </body>
 </html>
