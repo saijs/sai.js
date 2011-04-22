@@ -42,7 +42,10 @@ var Monitor = (function(){
         },
         warn : function(){D.log("warn", file, line, msg);},
         info : function(){D.log("info", file, line, msg);},
-        error : function(file, line, msg, stack, src){D.log("error", file, line, msg+"\n\n"+stack.replace(/ /g,"&nbsp;").replace(/\r\n|\r|\n/g, "<br />")+"<xmp>"+src+"</xmp>");},
+        error : function(file, line, msg, stack, src){
+            D.log("error", file, line,
+                msg+"\n\n"+stack.replace(/ /g,"&nbsp;").replace(/\r\n|\r|\n/g, "<br />")+"<xmp>"+src+"</xmp>");
+        },
         _box:null,
         _content:null,
         _close:null,
@@ -76,6 +79,8 @@ var Monitor = (function(){
     };
     // Error: {name, mesage}
     // [EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError]
+
+    // Event.
     var E = {
         add: function(elem, evt, handler){
             if(window.attachEvent){
