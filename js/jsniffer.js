@@ -1,82 +1,11 @@
 /**
- * @overview
- * monitor for pages.
+ * JavaScript Sniffer.
  *
  * @author 闲耘™ (hotoo.cn[AT]gmail.com)
  * @version 2011/04/02
  */
 
-var Monitor = (function(){
-    // Client info.
-    var Ev = {
-        os:"",
-        ua:navigator.userAgent,
-        la:navigator.userLanguage
-    };
-    // Debug.
-    var D = {
-        // debug status on/off.
-        //  true: state on, re-throw error on browser.
-        //  false: state off, do not re-throw error.
-        debug : true,
-        maxLenth:100,
-        _datas:[],
-        smartScroll: true,
-        log : function(type, file, line, msg){
-            if(!D._box){D.init();}
-            var atBottom = D._content.scrollTop+D._content.offsetHeight>=D._content.scrollHeight;
-            var d = {
-                file:file,
-                line:line,
-                type:type,
-                message:msg
-            }
-            D._datas.push(d);
-            if(D._datas.length>D.maxLenth){return;}
-            var ex = document.createElement("li");
-            ex.innerHTML = "File: "+file+"<br/>Line: "+line+"<br/>Type: "+type+"<br/><br/>"+msg;
-            D._content.appendChild(ex);
-            if(D.smartScroll && atBottom){
-                D._content.scrollTop = D._content.scrollHeight;
-            }
-        },
-        warn : function(){D.log("warn", file, line, msg);},
-        info : function(){D.log("info", file, line, msg);},
-        error : function(file, line, msg, stack, src){
-            D.log("error", file, line,
-                msg+"\n\n"+stack.replace(/ /g,"&nbsp;").replace(/\r\n|\r|\n/g, "<br />")+"<xmp>"+src+"</xmp>");
-        },
-        _box:null,
-        _content:null,
-        _close:null,
-        init : function(){
-            var box = document.createElement("div");
-            box.className = "monitor";
-            document.body.appendChild(box);
-            D._box = box;
-
-            var cnt = document.createElement("ol");
-            box.appendChild(cnt);
-            D._content = cnt;
-
-            var cls = document.createElement("a");
-            cls.href="javascript:void(0);";
-            cls.appendChild(document.createTextNode("Close"));
-            cls.onclick = D.hide;
-            D._close = cls;
-            box.appendChild(cls);
-
-            return box;
-        },
-        show : function(){
-            if(!D._box){D.init();}
-            D._box.style.display="block";
-        },
-        hide : function(){
-            if(!D._box){D.init();}
-            D._box.style.display="none";
-        }
-    };
+var JSniffer = (function(){
     // Error: {name, mesage}
     // [EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError]
 
@@ -143,12 +72,13 @@ var Monitor = (function(){
         //}, false);
     //}
     window.onerror = function(msg, file, line){
-        D.error(file, line, msg, F.stack(arguments.callee.caller), arguments.callee.caller);
+        var d = {
+            file: file,
+            ln: line,
+            msg: msg+", "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller,
+        };
+        Monitor.report(d);
         return !D.debug;
     };
 
-    return {
-        show:D.show,
-        hide:D.hide
-    };
 })();
