@@ -28,7 +28,8 @@
 	// Regular Expressions for parsing tags and attributes
 	var startTag = /^<(\w+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
 		endTag = /^<\/(\w+)[^>]*>/,
-		attr = /(\w+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
+		attr = /(\w+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g,
+        reDoctype = /^<!doctype\s[^>]+>/i;
 
 	// Empty Elements - HTML 4.01
 	var empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
@@ -61,8 +62,12 @@
 			// Make sure we're not in a script or style element
 			if ( !stack.last() || !special[ stack.last() ] ) {
 
+                if(reDoctype.test(html)){
+                    match = html.match(reDoctype);
+                    html = html.substring(match[0].length);
+                    chars = false;
 				// Comment
-				if ( html.indexOf("<!--") == 0 ) {
+				}else if ( html.indexOf("<!--") == 0 ) {
 					index = html.indexOf("-->");
 
 					if ( index >= 0 ) {
@@ -117,13 +122,20 @@
 				parseEndTag( "", stack.last() );
 			}
 
-			if ( html == last )
-				throw "Parse Error: " + html;
+            if ( html == last ){
+				throw new Error("Parse Error: " + html);
+            }
 			last = html;
 		}
 
 		// Clean up any remaining tags
 		parseEndTag();
+
+        function parseDoctype(tag, tagName, rest, unary){
+            if(handler.doctype){
+                handler.doctype(tag, doctype);
+            }
+        }
 
 		function parseStartTag( tag, tagName, rest, unary ) {
 			if ( block[ tagName ] ) {
