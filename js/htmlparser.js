@@ -5,6 +5,7 @@
  *
  * // Use like so:
  * HTMLParser(htmlString, {
+ *     doctype: function(tag, xml, version, type){},
  *     start: function(tag, attrs, unary) {},
  *     end: function(tag) {},
  *     chars: function(text) {},
@@ -31,7 +32,8 @@
 		attr = /([\w:-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g,
         reDoctype = /^<!doctype\s[^>]+>/i,
         reDoctypeSniffing = /^<!DOCTYPE\s+HTML\sPUBLIC\s+"\-\/\/W3C\/\/DTD\s+(X?HTML)\s+([\d.])+(?:\s+(\w+))?\/\/EN"\s+"[^"]+">/i,
-        reDoctypeHTML5 = /^<!DOCTYPE\s+HTML>/i;
+        reDoctypeHTML5 = /^<!DOCTYPE\s+HTML>/i,
+        newLine = /\r\n|\r|\n/;
 
 	// Empty Elements - HTML 4.01
 	var empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
@@ -44,22 +46,26 @@
 
 	// Elements that you can, intentionally, leave open
 	// (and which close themselves)
-	var closeSelf = makeMap("colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr");
+	var closeSelf = makeMap("colgroup,dd,dt,li,option,p,td,tfoot,th,thead,tr");
 
 	// Attributes that have their values filled in disabled="disabled"
 	var fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected");
 
 	// Special Elements (can contain anything)
-	var special = makeMap("script,style");
+	var special = makeMap("script,style,textarea,xmp");
 
 	var HTMLParser = this.HTMLParser = function( html, handler ) {
-		var index, chars, match, stack = [], last = html;
+		var index, match, stack = [], last = html;
 		stack.last = function(){
 			return this[ this.length - 1 ];
 		};
+        var error=[], line=1;
+        var errorCode = {
+            tagsNestIllegal: 0,
+            attrMissingQuote: 1
+        };
 
 		while ( html ) {
-			chars = true;
 
 			// Make sure we're not in a script or style element
 			if ( !stack.last() || !special[ stack.last() ] ) {
@@ -72,7 +78,7 @@
                     }else if(reDoctypeSniffing.test(match[0])){
                         match[0].replace(reDoctypeSniffing, parseDoctype);
                     }
-                    chars = false;
+                    line += getLine(match[0]);
 				// Comment
 				}else if ( html.indexOf("<!--") == 0 ) {
 					index = html.indexOf("-->");
@@ -80,9 +86,18 @@
 					if ( index >= 0 ) {
 						if ( handler.comment )
 							handler.comment( html.substring( 4, index ) );
+                        line += getLine(html.substring(0, index));
 						html = html.substring( index + 3 );
-						chars = false;
-					}
+                    }else{
+                        error.push({
+                            line: line,
+                            message: "comment is not closed.",
+                            source: html,
+                            code: errorCode.tagsNestIllegal
+                        });
+                        index = html.indexOf("\n");
+                        html = html.substring(index);
+                    }
 
 				// end tag
 				} else if ( html.indexOf("</") == 0 ) {
@@ -91,8 +106,18 @@
 					if ( match ) {
 						html = html.substring( match[0].length );
 						match[0].replace( endTag, parseEndTag );
-						chars = false;
-					}
+                        line += getLine(match[0]);
+                    }else{
+                        error.push({
+                            line: line,
+                            message: "tag is not closed.",
+                            source: html,
+                            code: errorCode.tagsNestIllegal
+                        });
+                        index = html.indexOf("<");
+                        line += html.substring(0, index);
+                        html = html.substring(index);
+                    }
 
 				// start tag
 				} else if ( html.indexOf("<") == 0 ) {
@@ -101,11 +126,19 @@
 					if ( match ) {
 						html = html.substring( match[0].length );
 						match[0].replace( startTag, parseStartTag );
-						chars = false;
-					}
-				}
-
-				if ( chars ) {
+                        line += getLine(match[0]);
+                    }else{
+                        error.push({
+                            line: line,
+                            message: "tag is not close.",
+                            source: html,
+                            code: error.tagsNestIllegal
+                        });
+                        index = html.indexOf("<", 1);
+                        line += html.substring(0, index);
+                        html = html.substring(index);
+                    }
+				}else{
 					index = html.indexOf("<");
 
 					var text = index < 0 ? html : html.substring( 0, index );
@@ -113,6 +146,8 @@
 
 					if ( handler.chars )
 						handler.chars( text );
+
+                    line += getLine(text);
 				}
 
 			} else {
@@ -130,7 +165,14 @@
 			}
 
             if ( html == last ){
-				throw new Error("Parse Error: " + html);
+                throw new Error("Parse Error: " + html + ", line:"+line);
+                throw new Error("Parse Error: " + html);
+                error.push({
+                    line: line,
+                    message: "Parse Error: "+ html,
+                    source: html,
+                    code: errorCode.tagsNestIllegal
+                });
             }
 			last = html;
 		}
@@ -138,6 +180,12 @@
 		// Clean up any remaining tags
 		parseEndTag();
 
+        return error;
+
+        function getLine(str){
+            var m = str.match(/\r\n|\r|\n/g);
+            return m ? m.length : 0;
+        }
         // doctype sniffing.
         function parseDoctype(tag, xml, ver, type){
             if(handler.doctype){
