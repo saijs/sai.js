@@ -26,10 +26,12 @@
 (function(){
 
 	// Regular Expressions for parsing tags and attributes
-	var startTag = /^<(\w+)((?:\s+\w+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
+	var startTag = /^<(\w+)((?:\s+[\w:-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
 		endTag = /^<\/(\w+)[^>]*>/,
-		attr = /(\w+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g,
-        reDoctype = /^<!doctype\s[^>]+>/i;
+		attr = /([\w:-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g,
+        reDoctype = /^<!doctype\s[^>]+>/i,
+        reDoctypeSniffing = /^<!DOCTYPE\s+HTML\sPUBLIC\s+"\-\/\/W3C\/\/DTD\s+(X?HTML)\s+([\d.])+(?:\s+(\w+))?\/\/EN"\s+"[^"]+">/i,
+        reDoctypeHTML5 = /^<!DOCTYPE\s+HTML>/i;
 
 	// Empty Elements - HTML 4.01
 	var empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
@@ -65,6 +67,11 @@
                 if(reDoctype.test(html)){
                     match = html.match(reDoctype);
                     html = html.substring(match[0].length);
+                    if(reDoctypeHTML5.test(match[0])){
+                        parseDoctype(match[0], "HTML", 5, "");
+                    }else if(reDoctypeSniffing.test(match[0])){
+                        match[0].replace(reDoctypeSniffing, parseDoctype);
+                    }
                     chars = false;
 				// Comment
 				}else if ( html.indexOf("<!--") == 0 ) {
@@ -131,9 +138,10 @@
 		// Clean up any remaining tags
 		parseEndTag();
 
-        function parseDoctype(tag, tagName, rest, unary){
+        // doctype sniffing.
+        function parseDoctype(tag, xml, ver, type){
             if(handler.doctype){
-                handler.doctype(tag, doctype);
+                handler.doctype(tag, xml+" "+ver+" "+type);
             }
         }
 
@@ -201,6 +209,9 @@
 		var results = "";
 
 		HTMLParser(html, {
+            doctype: function(tag){
+                results += tag;
+            },
 			start: function( tag, attrs, unary ) {
 				results += "<" + tag;
 
