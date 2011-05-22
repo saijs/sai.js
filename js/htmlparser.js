@@ -65,6 +65,7 @@
     }
 
 	var HTMLParser = this.HTMLParser = function( html, handler ) {
+        // stack = [{line:1, tag:"<div id=\"demo\">", tagName:"div"}]
 		var index, match, stack = [], last = html;
 		stack.last = function(){
 			return this[ this.length - 1 ];
@@ -79,7 +80,7 @@
 		while ( html ) {
 
 			// Make sure we're not in a script or style element
-			if ( !stack.last() || !special[ stack.last() ] ) {
+			if ( !stack.last() || !special[ stack.last().tagName ] ) {
 
                 if(reDoctype.test(html)){
                     match = html.match(reDoctype);
@@ -103,7 +104,6 @@
                         error.push({
                             line: line,
                             message: "comment is not closed.",
-                            //source: html,
                             source: lines[line],
                             code: errorCode.tagsNestedIllegal
                         });
@@ -122,8 +122,7 @@
                     }else{
                         error.push({
                             line: line,
-                            message: "tag is not closed.",
-                            //source: html,
+                            message: "tag "+stack.last().tagName+" closed.",
                             source: lines[line],
                             code: errorCode.tagsNestedIllegal
                         });
@@ -143,7 +142,7 @@
                     }else{
                         error.push({
                             line: line,
-                            message: "tag is not close.",
+                            message: "tag is unclosed.",
                             source: lines[line],
                             code: errorCode.tagsNestedIllegal
                         });
@@ -176,7 +175,7 @@
 
 			} else {
                 // XXX: pre-defind regex+i.
-				html = html.replace(new RegExp("(.*?)<\/" + stack.last() + "[^>]*>", "i"), function(all, text){
+				html = html.replace(new RegExp("(.*?)<\/" + stack.last().tagName + "[^>]*>", "i"), function(all, text){
 					text = text.replace(/<!--(.*?)-->/g, "$1")
 						.replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
 
@@ -186,19 +185,19 @@
 					return "";
 				});
 
-				parseEndTag( "", stack.last() );
+				parseEndTag( "", stack.last().tagName );
 			}
 
             if ( html == last ){
-                throw new Error("Parse Error: " + html + ", line:"+line);
-                throw new Error("Parse Error: " + html);
                 error.push({
                     line: line,
-                    message: "Parse Error: "+ html,
-                    //source: html,
-                    source: lines[line],
+                    message: "Parse Error.",
+                    source: html,
+                    //source: lines[line],
                     code: errorCode.tagsNestedIllegal
                 });
+
+                return error;
             }
 			last = html;
 		}
@@ -221,19 +220,19 @@
 
 		function parseStartTag( tag, tagName, rest, unary ) {
 			if ( block[ tagName ] ) {
-				while ( stack.last() && inline[ stack.last() ] ) {
-					parseEndTag( "", stack.last() );
+				while ( stack.last() && inline[ stack.last().tagName ] ) {
+					parseEndTag( "", stack.last().tagName );
 				}
 			}
 
-			if ( closeSelf[ tagName ] && stack.last() == tagName ) {
+			if ( closeSelf[ tagName ] && stack.last().tagName == tagName ) {
 				parseEndTag( "", tagName );
 			}
 
 			unary = empty[ tagName ] || !!unary;
 
 			if ( !unary )
-				stack.push( tagName );
+				stack.push({"line": line, "tagName": tagName, "tag": tag});
 
 			if ( handler.start ) {
 				var attrs = [];
@@ -265,13 +264,14 @@
 			// Find the closest opened tag of the same type
 			else
                 for ( var pos = stack.length - 1; pos >= 0; pos-- ){
-                    if ( stack[ pos ] == tagName ){
+                    if ( stack[pos].tagName == tagName ){
 						break;
                     }else{
                         error.push({
-                            line: line,
-                            //source: tag||(tagName?"</"+tagName+">":stack[pos]),
-                            source: lines[line],
+                            line: stack[pos].line,
+                            message: "tag "+stack[pos].tagName+" unclosed.",
+                            source: lines[stack[pos].line],
+                            //source: stack[pos].tag,
                             code: errorCode.tagsNestedIllegal
                         })
                     }
@@ -283,13 +283,14 @@
                     if(0 == pos){
                         error.push({
                             line: line,
-                            message: "tag unclosed.",
-                            source: stack[i].tag,
+                            message: "tag "+stack[i].tagName+" unclosed.",
+                            source: lines[stack[i].line],
+                            //source: stack[i].tag,
                             code: errorCode.tagsNestedIllegal
                         })
                     }
                     if ( handler.end ){
-						handler.end( stack[ i ] );
+						handler.end(stack[i].tagName);
                     }
                 }
 
