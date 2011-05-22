@@ -52,7 +52,17 @@
 	var fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected");
 
 	// Special Elements (can contain anything)
-	var special = makeMap("script,style,textarea,xmp");
+    var sp = "script,style,textarea,xmp";
+	var special = makeMap(sp);
+    var regexp_special = makeRegExp(sp);
+    function makeRegExp(tags){
+        var re = {};
+        tags = tags.split(",");
+        for(var i=0,l=tags.length; i<l; i++){
+            re[tags[i]] = new RegExp("(.*)?<\/" + tags[i] + "[^>]*>", "i");
+        }
+        return re;
+    }
 
 	var HTMLParser = this.HTMLParser = function( html, handler ) {
 		var index, match, stack = [], last = html;
@@ -61,9 +71,10 @@
 		};
         var error=[], line=1;
         var errorCode = {
-            tagsNestIllegal: 0,
+            tagsNestedIllegal: 0,
             attrMissingQuote: 1
         };
+        var lines = [""].concat(html.replace(/\r\n|\r|\n/g, "\n").split("\n"));
 
 		while ( html ) {
 
@@ -83,7 +94,7 @@
 				}else if ( html.indexOf("<!--") == 0 ) {
 					index = html.indexOf("-->");
 
-					if ( index >= 0 ) {
+					if ( index >= 4 ) {
 						if ( handler.comment )
 							handler.comment( html.substring( 4, index ) );
                         line += getLine(html.substring(0, index));
@@ -92,8 +103,9 @@
                         error.push({
                             line: line,
                             message: "comment is not closed.",
-                            source: html,
-                            code: errorCode.tagsNestIllegal
+                            //source: html,
+                            source: lines[line],
+                            code: errorCode.tagsNestedIllegal
                         });
                         index = html.indexOf("\n");
                         html = html.substring(index);
@@ -111,11 +123,12 @@
                         error.push({
                             line: line,
                             message: "tag is not closed.",
-                            source: html,
-                            code: errorCode.tagsNestIllegal
+                            //source: html,
+                            source: lines[line],
+                            code: errorCode.tagsNestedIllegal
                         });
                         index = html.indexOf("<");
-                        line += html.substring(0, index);
+                        line += getLine(html.substring(0, index));
                         html = html.substring(index);
                     }
 
@@ -131,12 +144,18 @@
                         error.push({
                             line: line,
                             message: "tag is not close.",
-                            source: html,
-                            code: error.tagsNestIllegal
+                            source: lines[line],
+                            code: errorCode.tagsNestedIllegal
                         });
                         index = html.indexOf("<", 1);
-                        line += html.substring(0, index);
-                        html = html.substring(index);
+                        if(index > -1){
+                            line += getLine(html.substring(0, index));
+                            html = html.substring(index);
+                        }else{
+                            // Clean up any remaining tags
+                            parseEndTag();
+                            return error;
+                        }
                     }
 				}else{
 					index = html.indexOf("<");
@@ -148,10 +167,16 @@
 						handler.chars( text );
 
                     line += getLine(text);
+                    if(index < 0){
+                        // Clean up any remaining tags
+                        parseEndTag();
+                        return error;
+                    }
 				}
 
 			} else {
-				html = html.replace(new RegExp("(.*)<\/" + stack.last() + "[^>]*>"), function(all, text){
+                // XXX: pre-defind regex+i.
+				html = html.replace(new RegExp("(.*?)<\/" + stack.last() + "[^>]*>", "i"), function(all, text){
 					text = text.replace(/<!--(.*?)-->/g, "$1")
 						.replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
 
@@ -170,8 +195,9 @@
                 error.push({
                     line: line,
                     message: "Parse Error: "+ html,
-                    source: html,
-                    code: errorCode.tagsNestIllegal
+                    //source: html,
+                    source: lines[line],
+                    code: errorCode.tagsNestedIllegal
                 });
             }
 			last = html;
@@ -212,6 +238,7 @@
 			if ( handler.start ) {
 				var attrs = [];
 
+                // TODO: 引号检查。
 				rest.replace(attr, function(match, name) {
 					var value = arguments[2] ? arguments[2] :
 						arguments[3] ? arguments[3] :
@@ -237,21 +264,45 @@
 
 			// Find the closest opened tag of the same type
 			else
-				for ( var pos = stack.length - 1; pos >= 0; pos-- )
-					if ( stack[ pos ] == tagName )
+                for ( var pos = stack.length - 1; pos >= 0; pos-- ){
+                    if ( stack[ pos ] == tagName ){
 						break;
+                    }else{
+                        error.push({
+                            line: line,
+                            //source: tag||(tagName?"</"+tagName+">":stack[pos]),
+                            source: lines[line],
+                            code: errorCode.tagsNestedIllegal
+                        })
+                    }
+                }
 
 			if ( pos >= 0 ) {
 				// Close all the open elements, up the stack
-				for ( var i = stack.length - 1; i >= pos; i-- )
-					if ( handler.end )
+                for ( var i = stack.length - 1; i >= pos; i-- ){
+                    if(0 == pos){
+                        error.push({
+                            line: line,
+                            message: "tag unclosed.",
+                            source: stack[i].tag,
+                            code: errorCode.tagsNestedIllegal
+                        })
+                    }
+                    if ( handler.end ){
 						handler.end( stack[ i ] );
+                    }
+                }
 
 				// Remove the open elements from the stack
 				stack.length = pos;
 			}
 		}
 	};
+
+    this.HTMLint = function(html){
+        var error = HTMLParser(html, {});
+        return error;
+    };
 
 	this.HTMLtoXML = function( html ) {
 		var results = "";
