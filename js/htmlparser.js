@@ -29,7 +29,7 @@
 	// Regular Expressions for parsing tags and attributes
 	var startTag = /^<(\w+)((?:\s+[\w:-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
 		endTag = /^<\/(\w+)[^>]*>/,
-		attr = /([\w:-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g,
+		attr = /([\w:-]+)(?:\s*=\s*((?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g,
         reDoctype = /^<!doctype\s[^>]+>/i,
         reDoctypeSniffing = /^<!DOCTYPE\s+HTML\sPUBLIC\s+"\-\/\/W3C\/\/DTD\s+(X?HTML)\s+([\d.])+(?:\s+(\w+))?\/\/EN"\s+"[^"]+">/i,
         reDoctypeHTML5 = /^<!DOCTYPE\s+HTML>/i,
@@ -63,6 +63,14 @@
         }
         return re;
     }
+        var S = {
+            startsWith: function(str, ch){
+                return str.indexOf(ch) == 0;
+            },
+            endsWith: function(str, ch){
+                return str.lastIndexOf(ch) == (str.length-ch.length);
+            }
+        };
 
 	var HTMLParser = this.HTMLParser = function( html, handler ) {
         // stack = [{line:1, tag:"<div id=\"demo\">", tagName:"div"}]
@@ -217,6 +225,7 @@
             }
         }
 
+
 		function parseStartTag( tag, tagName, rest, unary ) {
 			if ( block[ tagName ] ) {
 				while ( stack.last() && inline[ stack.last().tagName ] ) {
@@ -233,14 +242,23 @@
 			if ( !unary )
 				stack.push({"line": line, "tagName": tagName, "tag": tag});
 
-			if ( handler.start ) {
+			//if ( handler.start ) {
 				var attrs = [];
 
                 // TODO: 引号检查。
 				rest.replace(attr, function(match, name) {
-					var value = arguments[2] ? arguments[2] :
-						arguments[3] ? arguments[3] :
+                    if(!(S.startsWith(arguments[2], '"') && S.endsWith(arguments[2], '"')) &&
+                      !(S.startsWith(arguments[2], "'") && S.endsWith(arguments[2], "'"))){
+                        error.push({
+                            line:line,
+                            source: lines[line],
+                            message: "attributes missing quotes.",
+                            code: errorCode.attrMissingQuote
+                        });
+                    }
+					var value = arguments[3] ? arguments[3] :
 						arguments[4] ? arguments[4] :
+						arguments[5] ? arguments[5] :
 						fillAttrs[name] ? name : "";
 
 					attrs.push({
@@ -252,7 +270,7 @@
 
 				if ( handler.start )
 					handler.start( tagName, attrs, unary );
-			}
+			//}
 		}
 
 		function parseEndTag( tag, tagName ) {
