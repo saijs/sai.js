@@ -111,6 +111,8 @@ window.DOMLint = (function(){
                 if(charsetIllegal){
                     log("html", "文档头部需先设置编码");
                 }
+            }else{
+                // document.charset
             }
             // 检测文档中的title设置。
             var tt = document.getElementsByTagName("title");
@@ -174,9 +176,6 @@ window.DOMLint = (function(){
                     frame   = win.document.getElementsByTagName("frame"),
                     object  = win.document.getElementsByTagName("object"),
                     embed   = win.document.getElementsByTagName("embed");
-                for(var i=0,l=script.length; i<l; i++){
-                    if(!D.hasAttr(script[i], "src")){continue;}
-                }
                 for(var i=0,uri,tag,l=script.length; i<l; i++){
                     tag = script[i].parentNode.tagName.toLowerCase();
                     if("body" != tag){
