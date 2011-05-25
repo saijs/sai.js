@@ -6,6 +6,8 @@
  */
 
 var JSniffer = (function(){
+    // true: re-throw error, false: capture error.
+    var isDebug = true;
     // Error: {name, mesage}
     // [EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError]
 
@@ -78,7 +80,7 @@ var JSniffer = (function(){
             msg: msg+", "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller,
         };
         Monitor.report(d);
-        return !D.debug;
+        return !isDebug;
     };
 
 })();
