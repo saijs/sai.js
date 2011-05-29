@@ -4,23 +4,10 @@
  * @author 闲耘™ (hotoo.cn[AT]gmail.com)
  * @version 2011/04/02
  */
-
-var JSniffer = (function(){
-    // true: re-throw error, false: capture error.
-    var isDebug = true;
+window.monitor.JSniffer = (function(){
     // Error: {name, mesage}
     // [EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError]
 
-    // Event.
-    var E = {
-        add: function(elem, evt, handler){
-            if(window.attachEvent){
-                elem.attachEvent("on"+evt, handler);
-            }else{
-                elem.addEventListener(evt, handler, false);
-            }
-        }
-    };
     // Function.
     var F = {
         name : function(fn){
@@ -79,8 +66,9 @@ var JSniffer = (function(){
             ln: line,
             msg: msg+", "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
         };
-        Monitor.report(d);
-        return !isDebug;
+        window.monitor.report(d);
+        // true: re-throw error, false: capture error.
+        return window.monitor.rethrow;
     };
 
 })();

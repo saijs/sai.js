@@ -1,6 +1,6 @@
 // Quality Monitoring System.
 
-window.DOMLint = (function(){
+window.monitor.DOMLint = (function(){
     // DOM
     var D = {
         hasAttr: function(elem, attr){
@@ -256,7 +256,7 @@ window.DOMLint = (function(){
                         // 递归进嵌套的页面是没有必要的。
                         // 但作为测试，没有在每个内嵌页面引入检测脚本。
                         // 可以先判断内嵌页面中是否有存在DOMLint对象，有则不递归。
-                        if(frames[i].contentWindow.DOMLint){continue;}
+                        if(frames[i].contentWindow.monitor.DOMLint){continue;}
                         check(frames[i].contentWindow);
                     }catch(ex){}
                 }
