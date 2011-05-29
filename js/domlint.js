@@ -20,14 +20,15 @@ window.DOMLint = (function(){
             //return node.outerHTML || new XMLSerializer().serializeToString(node);
         },
         wrapHTML: function(node){
-            return D.outerHTML(node).replace(/^(<\w+[^>]*>).*/, '$1...');
+            return D.outerHTML(node).replace(/^(<[^>]+>)(?:.|\s)*/, '$1...');
         }
     };
     var htmlErrors = [];
     function log(type, msg, err){
         htmlErrors.push({ln:0, err:err, code:msg});
         //var msg=Array.prototype.join.call(arguments);
-        //if(window.console && window.console.log){window.console.log(msg);}
+        var debug = !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0);
+        if(debug && window.console && window.console.log){window.console.log("DOMLint: ", msg, err);}
         //else{throw new Error(msg);}
     }
     // String.
@@ -233,7 +234,9 @@ window.DOMLint = (function(){
                     if(!D.hasAttr(img[i], "height") || !re_number.test(img[i].getAttribute("height"))){
                         attrs.push("height");
                     }
-                    log("html", "图片缺少"+attrs.join()+"属性。"+D.outerHTML(img[i]), errorCodes.attrIllegal);
+                    if(attrs.length>0){
+                        log("html", "图片缺少"+attrs.join()+"属性。"+D.outerHTML(img[i]), errorCodes.attrIllegal);
+                    }
                     res.img.push(img[i].getAttribute("src"));
                 }
                 //!var frames  = Array.prototype.concat.call(iframe, frame);
@@ -381,7 +384,7 @@ window.DOMLint = (function(){
             var li = document.getElementsByTagName("li");
             for(var i=0,tag,l=li.length; i<l; i++){
                 tag = li[i].parentNode.tagName.toLowerCase();
-                if("ul"!=tag || "ol"!=tag){
+                if("ul"!=tag && "ol"!=tag){
                     log("html", tag+">"+D.wrapHTML(li[i]), errorCodes.tagsNestedIllegal);
                 }
             }

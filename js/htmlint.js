@@ -65,8 +65,8 @@
     // HTML Node Object.
     var Node = function(){
         this.tagName = null;
-        this.start = null;
-        this.end = null;
+        this.startTag = null;
+        this.endTag = null;
         this.attrs = {};
         this.selfClose = false;
         this.startLine = 0;
@@ -117,13 +117,10 @@
         return a;
     };
     var htmlErrors = [];
-    function log(type, line, msg, err){
-        //htmlErrors.push({ln:line, err:err, code:msg});
-        htmlErrors.push({line:line, code:err, message:msg, source:msg});
-        if(window.console && window.console.log){window.console.log(line, err, msg);}
-        //var msg=Array.prototype.join.call(arguments);
-        //if(window.console && window.console.log){window.console.log(msg);}
-        //else{throw new Error(msg);}
+    function log(type, line, source, msg, code){
+        var debug = !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0);
+        if(debug && window.console && window.console.log){window.console.log("HTMLint: [line:"+line+"] "+"[code:"+code+"]"+"[message:"+msg+"]"+"[source:"+source+"]");}
+        htmlErrors.push({ln:line, err:code, code:encodeURIComponent(source)});
     }
 
 	// Regular Expressions for parsing tags and attributes
@@ -164,13 +161,41 @@
         return re;
     }
 
+    // String.
     var S = {
         startsWith: function(str, ch){
             return str.indexOf(ch) == 0;
         },
         endsWith: function(str, ch){
             return str.lastIndexOf(ch) == (str.length-ch.length);
+        },
+        byteLength: function(str){
+            return str.replace(/[^\x00-\xff]/g, "xx").length;
+        },
+        isLower: function(str){
+            return str == str.toLowerCase();
         }
+    };
+
+    var errorCodes = {
+        doctypeIllegal: 0,
+        charsetIllegal: 1,
+        protocolIllegal: 2,
+        attrIllegal: 3,
+        relIllegal: 4,
+        tagsNestedIllegal: 5,
+        inlineJS: 6,
+        inlineCSS: 7,
+        linksHrefIllegal: 8,
+        idDuplicated: 9,
+        tagNameIllegal: 10,
+        tagsDeprecated: 11
+    };
+    var res={
+        img:[],
+        css:[],
+        js:[],
+        fla:[]
     };
 
 	var HTMLParser = this.HTMLParser = function( html, handler ) {
@@ -179,11 +204,7 @@
 		stack.last = function(){
 			return this[ this.length - 1 ];
 		};
-        var error=[], line=1;
-        var errorCodes = {
-            tagsNestedIllegal: 0,
-            attrMissingQuote: 1
-        };
+        var line=1;
         var lines = [""].concat(html.replace(/\r\n|\r|\n/g, "\n").split("\n"));
         var dom = new Node();
         var currNode = dom;
@@ -203,7 +224,8 @@
                     }
 
                     node = new Node();
-                    node.start = match[0];
+                    node.startTag = match[0];
+                    node.tagName = "!DOCTYPE";
                     node.startLine = line;
                     currNode.appendChild(node);
 
@@ -218,7 +240,8 @@
 							handler.comment( html.substring( 4, index ) );
 
                         node = new Node();
-                        node.start = html.substring(0, index);
+                        node.startTag = html.substring(0, index);
+                        node.tagName = "!--";
                         node.startLine = line;
                         currNode.appendChild(node);
 
@@ -226,12 +249,7 @@
                         node.endLine = line;
 						html = html.substring( index + 3 );
                     }else{
-                        error.push({
-                            line: line,
-                            message: "comment is not closed.",
-                            source: lines[line],
-                            code: errorCodes.tagsNestedIllegal
-                        });
+                        log("html", line, lines[line], "comment unclosed.", errorCodes.tagsNestedIllegal);
                         index = html.indexOf("\n");
                         html = html.substring(index);
                     }
@@ -245,12 +263,7 @@
 						match[0].replace( endTag, parseEndTag );
                         line += getLine(match[0]);
                     }else{
-                        error.push({
-                            line: line,
-                            message: "tag "+stack.last().tagName+" closed.",
-                            source: lines[line],
-                            code: errorCodes.tagsNestedIllegal
-                        });
+                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
                         index = html.indexOf("<");
                         line += getLine(html.substring(0, index));
                         html = html.substring(index);
@@ -265,12 +278,7 @@
 						match[0].replace( startTag, parseStartTag );
                         line += getLine(match[0]);
                     }else{
-                        error.push({
-                            line: line,
-                            message: "tag is unclosed.",
-                            source: lines[line],
-                            code: errorCodes.tagsNestedIllegal
-                        });
+                        log("html", line, lines[line], "tag unclosed.", errorCodes.tagsNestedIllegal);
                         index = html.indexOf("<", 1);
                         if(index > -1){
                             line += getLine(html.substring(0, index));
@@ -278,10 +286,7 @@
                         }else{
                             // Clean up any remaining tags
                             parseEndTag();
-                            return {
-                                error: error,
-                                dom: dom
-                            };
+                            return dom;
                         }
                     }
 				}else{
@@ -293,45 +298,49 @@
 					if ( handler.chars )
 						handler.chars( text );
 
-                    line += getLine(text);
                     if(index < 0){
                         // Clean up any remaining tags
+                        // XXX: 错误处理。
                         parseEndTag();
-                        return {
-                            error: error,
-                            dom: dom
-                        };
+                        return dom;
                     }
+                    line += getLine(text);
 				}
 
 			} else {
-				html = html.replace(regexp_special[stack.last().tagName], function(all, text){
-					text = text.replace(/<!--(.*?)-->/g, "$1")
-						.replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
-
-					if ( handler.chars )
-						handler.chars( text );
-
+                // TODO: 标签大小写不同，空格等会造成问题。
+                var t = "</"+stack.last().tagName+">";
+                index = html.indexOf(t);
+                if(index >= 0){
+                    var text = html.substring(0, index);
+                    if(handler.chars){
+                        handler.chars(text);
+                    }
                     currNode.innerHTML = text;
-					return "";
-				});
+                    line += getLine(text);
+                    html = html.substring(index);
+                }else{
+                    log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                }
+				//html = html.replace(regexp_special[stack.last().tagName], function(all, text){
+					//text = text.replace(/<!--(.*?)-->/g, "$1")
+						//.replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
+
+					//if ( handler.chars )
+						//handler.chars( text );
+
+                    //currNode.innerHTML = text;
+					//return "";
+				//});
 
 				parseEndTag( "", stack.last().tagName );
+                html = html.substring(t.length);
 			}
 
             if ( html == last ){
-                error.push({
-                    line: line,
-                    message: "Parse Error.",
-                    source: html,
-                    //source: lines[line],
-                    code: errorCodes.tagsNestedIllegal
-                });
+                log("html", line, lines[line], "Parse Error.", errorCodes.tagsNestedIllegal);
 
-                return {
-                    error: error,
-                    dom: dom
-                };
+                return dom;
             }
 			last = html;
 		}
@@ -339,10 +348,7 @@
 		// Clean up any remaining tags
 		parseEndTag();
 
-        return {
-            error: error,
-            dom: dom
-        };
+        return dom;
 
         function getLine(str){
             var m = str.match(/\r\n|\r|\n/g);
@@ -364,7 +370,7 @@
          */
 		function parseStartTag( tag, tagName, rest, unary ) {
             var node = new Node();
-            node.tagStart = tag;
+            node.startTag = tag;
             node.startLine = line;
             node.tagName = tagName;
             currNode.appendChild(node);
@@ -391,12 +397,7 @@
             rest.replace(attr, function(match, name) {
                 if(!(S.startsWith(arguments[2], '"') && S.endsWith(arguments[2], '"')) &&
                   !(S.startsWith(arguments[2], "'") && S.endsWith(arguments[2], "'"))){
-                    error.push({
-                        line:line,
-                        source: lines[line],
-                        message: "attributes missing quotes.",
-                        code: errorCodes.attrMissingQuote
-                    });
+                    log("html", line, lines[line]+":", tagName+"["+name+"] missing quotes.", errorCodes.attrMissingQuote);
                 }
                 var value = arguments[3] ? arguments[3] :
                     arguments[4] ? arguments[4] :
@@ -421,74 +422,36 @@
          */
 		function parseEndTag( tag, tagName ) {
 			// If no tag name is provided, clean shop
-            if ( !tagName ){
-				var pos = 0;
-            }else{
-            // Find the closest opened tag of the same type
+            if(!tagName){
                 for ( var pos = stack.length - 1; pos >= 0; pos-- ){
-                    if ( stack[pos].tagName == tagName ){
-						break;
-                    }else{
-                        error.push({
-                            line: stack[pos].line,
-                            message: "tag "+stack[pos].tagName+" unclosed.",
-                            source: lines[stack[pos].line],
-                            //source: stack[pos].tag,
-                            code: errorCodes.tagsNestedIllegal
-                        })
+                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+
+                    currNode.endTag = tag;
+                    currNode.endLine = line;
+                    currNode  = currNode.parentNode;
+                }
+            }else{
+                if(stack.last().tagName == tagName){
+                    if(handler.end){
+                        handler.end(stack.last().tagName);
                     }
+                    stack.pop();
+
+                    currNode.endTag = tag;
+                    currNode.endLine = line;
+                    currNode  = currNode.parentNode;
+                }else{
+                    log("html", line, lines[stack.last().line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
                 }
             }
-
-			if ( pos >= 0 ) {
-				// Close all the open elements, up the stack
-                for ( var i = stack.length - 1; i >= pos; i-- ){
-                    if(0 == pos){
-                        error.push({
-                            line: line,
-                            message: "tag "+stack[i].tagName+" unclosed.",
-                            source: lines[stack[i].line],
-                            //source: stack[i].tag,
-                            code: errorCodes.tagsNestedIllegal
-                        });
-
-                        currNode.end = tag;
-                        currNode.endLine = line;
-                        currNode  = currNode.parentNode;
-                    }
-                    if ( handler.end ){
-						handler.end(stack[i].tagName);
-                    }
-                }
-
-				// Remove the open elements from the stack
-				stack.length = pos;
-			}
 		}
 	};
-
-    var errorCodes = {
-        charsetIllegal: 1,
-        protocolIllegal: 2,
-        attrIllegal: 3,
-        relIllegal: 4,
-        tagsNestedIllegal: 5,
-        inlineJS: 6,
-        inlineCSS: 7,
-        linksHrefIllegal: 8
-    };
-    var res={
-        img:[],
-        css:[],
-        js:[],
-        fla:[]
-    };
     var rules = [
         // parse head.
         function(html, dom){
-            if(!reDoctype.test(html)){
-                log("html", 0, "DOCTYPE 没有顶格。", errorCodes.doctypeIllegal);
-            }
+            //if(!reDoctype.test(html)){
+                //log("html", 0, "DOCTYPE 没有顶格。", errorCodes.doctypeIllegal);
+            //}
             var docLen = dom.getElementsByTagName("!DOCTYPE").length;
             if(docLen == 0){
                 log("html", 0, "没有设置 DOCTYPE。", errorCodes.doctypeIllegal);
@@ -532,10 +495,11 @@
             // @see http://www.yesky.com/imagesnew/software/css/css2/a_import.html
             var re = /@import\s+[^;]+;/g;
             for(var i=0,mat,tag,l=styles.length; i<l; i++){
-                tag = styles[i].parentNode.tagName;
-                if(tag && tag.toLowerCase() != "head"){
-                    log("html", tag+">style", errorCodes.tagsNestedIllegal);
-                }
+                // style 标签的嵌套。
+                //tag = styles[i].parentNode.tagName;
+                //if(tag && tag.toLowerCase() != "head"){
+                    //log("html", tag+">style", errorCodes.tagsNestedIllegal);
+                //}
                 mat = styles[i].innerHTML.match(re);
                 if(mat){
                     log("css", styles[i].startLine, mat.join(""), errorCodes.styleWithImport);
@@ -545,37 +509,63 @@
         // check elements(inline js, inlile css, duplicate id, ...)
         function(html, dom){
             var elems = dom.getElementsByTagName("*");
-            var repeatIDs=[], cache={};
-            var inlinejs = "onclick,onblur,onchange,oncontextmenu,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onmousedown,onmousemove,onmouseout,onmouseover,onmouseup,onresize,onscroll,onload,onunload,onselect,onsubmit,onbeforecopy,onbeforecut,onbeforepaste,onbeforeprint,onbeforeunload".split(",");
-            for(var i=0,id,l=elems.length; i<l; i++){
-                if(elems[i].hasAttribute( "id")){
+            var duplicateIDs=[], duplicateIDsCache={};
+            var inlinejs = "onclick,onblur,onchange,oncontextmenu,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onmousedown,onmousemove,onmouseout,onmouseover,onmouseup,onresize,onscroll,onload,onunload,onselect,onsubmit,onbeforecopy,oncopy,onbeforecut,oncut,onbeforepaste,onpaste,onbeforeprint,onpaint,onbeforeunload".split(",");
+            for(var i=0,tn,id,l=elems.length; i<l; i++){
+                if(elems[i].tagName=="!DOCTYPE" || elems[i].tagName=="!--"){continue;}
+                // tagName.
+                if(!S.isLower(elems[i].tagName)){
+                    log("html", elems[i].startLine, elems[i].startTag, "tagName must bu lowerCase.", errorCodes.tagNameIllegal);
+                }
+                tn = elems[i].tagName.toLowerCase();
+                if("font"==tn || "s"==tn || "u"==tn){
+                    log("html", elems[i].startLine, elems[i].startTag, "tagName deprecated.", errorCodes.tagsDeprecated);
+                }
+                // duplicate id.
+                if(elems[i].hasAttribute("id")){
                     id = elems[i].getAttribute("id");
-                    if(cache.hasOwnProperty("ID_"+id)){
-                        repeatIDs.push(id);
-                        continue;
+                    if(duplicateIDsCache.hasOwnProperty("ID_"+id)){
+                        duplicateIDs.push(id);
                     }
-                    cache["ID_"+id] = true;
+                    duplicateIDsCache["ID_"+id] = true;
                 }
                 for(var j=0,m=inlinejs.length; j<m; j++){
                     if(elems[i].hasAttribute(inlinejs[j])){
-                        log("html", elems[i].startLine, elems[i].tagStart, errorCodes.inlineJS);
+                        log("html", elems[i].startLine, elems[i].startTag, "inline js.", errorCodes.inlineJS);
+                        break;
                     }
                 }
                 if(elems[i].hasAttribute("style")){
-                    log("html", elems[i].startLine, elems[i].tagStart, errorCodes.inlineCSS);
+                    log("html", elems[i].startLine, elems[i].startTag, "inline css.", errorCodes.inlineCSS);
                 }
             }
-            if(repeatIDs.length){
-                log("html", 0, repeatIDs.join(","), errorCodes.idRepeated);
+            if(duplicateIDs.length > 0){
+                log("html", 0, duplicateIDs.join(","), "duplicate id.", errorCodes.idDuplicated);
             }
 
             // We can't check tag p in p on the DOM.
+            var ps = dom.getElementsByTagName("p");
+            for(var i=0,p,pc,l=ps.length; i<l; i++){
+                p = ps[i];
+                pc = ps[i].getElementsByTagName("*");
+                for(var j=0,m=pc.length; j<m; j++){
+                    switch(pc[j].tagName.toLowerCase()){
+                        case "a":
+                        case "em":
+                        case "span":
+                        case "strong":
+                            break;
+                        default:
+                            log("html", pc[j].startLine, "p>"+pc[j].startTag, errorCodes.tagsNestedIllegal);
+                    }
+                }
+            }
             // document.getElementsByTagName("p")[i].getElementsByTagName("p").length;
             // ul>li, ol>li
             var li = dom.getElementsByTagName("li");
             for(var i=0,tag,l=li.length; i<l; i++){
                 tag = li[i].parentNode.tagName.toLowerCase();
-                if("ul"!=tag || "ol"!=tag){
+                if("ul"!=tag && "ol"!=tag){
                     log("html", li[i].startLine, tag+">"+li[i].startTag, errorCodes.tagsNestedIllegal);
                 }
             }
@@ -592,7 +582,7 @@
             for(var i=0,tag,l=dd.length; i<l; i++){
                 tag = dd[i].parentNode.tagName.toLowerCase();
                 if("dl" != tag){
-                    log("html", dd[i].startLine, tag+">"+dd[i].tagStart, errorCodes.tagsNestedIllegal);
+                    log("html", dd[i].startLine, tag+">"+dd[i].startTag, errorCodes.tagsNestedIllegal);
                 }
             }
             // tr>td
@@ -600,7 +590,7 @@
             for(var i=0,tag,l=td.length; i<l; i++){
                 tag = td[i].parentNode.tagName.toLowerCase();
                 if("tr" != tag){
-                    log("html", td[i].startLine, tag+">"+td[i].tagStart, errorCodes.tagsNestedIllegal);
+                    log("html", td[i].startLine, tag+">"+td[i].startTag, errorCodes.tagsNestedIllegal);
                 }
             }
         },
@@ -620,17 +610,17 @@
                 object  = dom.getElementsByTagName("object"),
                 embed   = dom.getElementsByTagName("embed");
             for(var i=0,uri,tag,l=script.length; i<l; i++){
-                tag = script[i].parentNode.tagName.toLowerCase();
-                if("body" != tag){
-                    log("html", script[i].startLine, tag+">script", errorCodes.tagsNestedIllegal);
-                }
+                //tag = script[i].parentNode.tagName.toLowerCase();
+                //if("body" != tag){
+                    //log("html", script[i].startLine, tag+">"+script[i].startTag, errorCodes.tagsNestedIllegal);
+                //}
                 if(!script[i].hasAttribute("src")){continue;}
                 if(!script[i].hasAttribute("charset")){
-                    log("html", script[i].startLine, script[i].tagStart, errorCodes.charsetIllegal);
+                    log("html", script[i].startLine, script[i].startTag, "missing charset.", errorCodes.charsetIllegal);
                 }
                 uri = URI.parse(script[i].getAttribute("src"));
                 if(checkProtocol && "https:" != uri.protocol){
-                    log("html", script[i].startLine, script[i].tagStart, errorCodes.protocolIllegal);
+                    log("html", script[i].startLine, script[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
                 res.js.push(script[i].getAttribute("src"));
             }
@@ -638,26 +628,27 @@
                 type = link[i].getAttribute("type");
                 rel = link[i].getAttribute("rel");
                 uri = URI.parse(link[i].getAttribute("href"));
-                tag = link[i].parentNode.tagName.toLowerCase();
-                if("head" != tag){
-                    log("html", link[i].startLine, tag+">link", errorCodes.tagsNestedIllegal);
-                }
+                // link 标签的嵌套。
+                //tag = link[i].parentNode.tagName.toLowerCase();
+                //if("head" != tag){
+                    //log("html", link[i].startLine, tag+">"+link[i].startTag, "tags nested error.", errorCodes.tagsNestedIllegal);
+                //}
                 // All links need rel attr.
                 if(!link[i].hasAttribute("rel")){
-                    log("html", link[i].startLine, link[i].tagStart, errorCodes.relIllegal);
+                    log("html", link[i].startLine, link[i].startTag, "missing [rel]", errorCodes.relIllegal);
                     continue;
                 }
                 // favicon, stylesheet, ...
                 if(checkProtocol && "https:" != uri.protocol){
-                    log("html", link[i].startLine, link[i].tagStart, errorCodes.protocolIllegal);
+                    log("html", link[i].startLine, link[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
                 // link[rel=stylesheet]
                 if("stylesheet" != link[i].getAttribute("rel")){continue;}
                 //if("text/css" != type){
-                    //log("html", "外部CSS没有设置type属性。");
+                    //log("html", link[i].startLine, link[i].startTag, "link[rel=stylesheet] missing [type].", errorCodes.attrIllegal);
                 //}
                 if(!link[i].hasAttribute("charset")){
-                    log("html", link[i].startLine, link[i].tagStart, errorCodes.charsetIllegal);
+                    log("html", link[i].startLine, link[i].startTag, "missing charset.", errorCodes.charsetIllegal);
                 }
                 res.css.push(link[i].getAttribute("href"));
             }
@@ -665,32 +656,34 @@
                 var attrs = [];
                 uri=URI.parse(img[i].getAttribute("src"));
                 if(checkProtocol && "https:" != uri.protocol){
-                    log("html", img[i].startLine, img[i].tagStart, errorCodes.protocolIllegal);
+                    log("html", img[i].startLine, img[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
                 if(!img[i].hasAttribute("alt") || re_empty.test(img[i].getAttribute("alt"))){
                     attrs.push("alt");
                 }
-                if(!img[i].hasAttribute("width") || !re_number.test(img[i].getAttribute("width"))){
-                    attrs.push("width");
+                //if(!img[i].hasAttribute("width") || !re_number.test(img[i].getAttribute("width"))){
+                    //attrs.push("width");
+                //}
+                //if(!img[i].hasAttribute("height") || !re_number.test(img[i].getAttribute("height"))){
+                    //attrs.push("height");
+                //}
+                if(attrs.length>0){
+                    log("html", img[i].startLine, img[i].startTag, "missing "+attrs.join(), errorCodes.attrIllegal);
                 }
-                if(!img[i].hasAttribute("height") || !re_number.test(img[i].getAttribute("height"))){
-                    attrs.push("height");
-                }
-                log("html", img[i].startLine, "missing "+attrs.join()+". "+img[i].tagStart, errorCodes.attrIllegal);
                 res.img.push(img[i].getAttribute("src"));
             }
             var frames = iframe.concat(frame);
             for(var i=0,l=frames.length; i<l; i++){
                 uri=URI.parse(frames[i].getAttribute("src"));
                 if(checkProtocol && "https:" != uri.protocol){
-                    log("html", frames[i].startLine, frames[i].tagStart, errorCodes.protocolIllegal);
+                    log("html", frames[i].startLine, frames[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
             }
             for(var i=0,l=object.length; i<l; i++){
                 if(object[i].getAttribute("codebase")){
                     uri = URI.parse(object[i].getAttribute("codebase"));
                     if(checkProtocol && "https:"!=uri.protocol){
-                        log("html", object[i].startLine, '<object codebase="'+object[i].getAttribute("codebase")+'"', errorCodes.protocolIllegal);
+                        log("html", object[i].startLine, '<object codebase="'+object[i].getAttribute("codebase")+'"', "protocol illegal.", errorCodes.protocolIllegal);
                     }
                 }
                 var params=object[i].getElementsByTagName("param");
@@ -699,7 +692,7 @@
                       "src"==params[j].getAttribute("src")){
                         uri=URI.parse(params[j].getAttribute("value"));
                         if(checkProtocol && "https:" != uri.protocol){
-                            log("html", params[i].startLine, params[j].tagStart, errorCodes.protocolIllegal);
+                            log("html", params[i].startLine, params[j].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                         }
                         res.fla.push(params[j].getAttribute("value"));
                         break;
@@ -710,7 +703,7 @@
                 if(!embed[i].hasAttribute("src")){continue;}
                 uri=URI.parse(embed[i].getAttribute("src"));
                 if(checkProtocol && "https:"!=uri.protocol){
-                    log("html", embed[i].startLine, embed[i].tagStart, errorCodes.protocolIllegal);
+                    log("html", embed[i].startLine, embed[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
                 res.fla.push(embed[i].getAttribute("src"));
             }
@@ -718,32 +711,44 @@
         // checkLinksUsage, 检测页面链接可用性，硬编码等
         function(html, dom){
             var links = dom.getElementsByTagName("a");
+            // XXX: 统一状态判断。
+            var debug = !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0);
             for(var i=0,href,uri,l=links.length; i<l; i++){
-                if(!links[i].hasAttribute("href")){continue;}
+                if(!links[i].hasAttribute("href")){
+                    log("html", links[i].startLine, links[i].startTag, "missing [href]", errorCodes.attrIllegal);
+                    continue;
+                }
                 href = links[i].getAttribute("href");
                 if(href.indexOf("#")==0){continue;}
                 if(/javascript:void(0);?/.test(href)){continue;}
                 uri = URI.parse(links[i].getAttribute("href"));
-                if(uri.hostname.indexOf("alipay.net")>=0 ||
+                if((!debug && uri.hostname.indexOf(".alipay.net")>0) ||
                     uri.hostname.indexOf("localhost")==0 ||
                     0==href.indexOf("$")){ // href="$xxServer.getURI('...')"
-                    log("html", links[i].startLine, links[i].tagStart, errorCodes.linksHrefIllegal);
+                    log("html", links[i].startLine, links[i].startTag, "a[href] illegal.", errorCodes.linksHrefIllegal);
                 }
                 // XXX: 站内地址检测是否有效(404)，仅限于SIT环境。
             }
         }
     ];
     this.HTMLint = function(html){
-        var parse = HTMLParser(html, {});
-        var err = parse.error;
-        var dom = parse.dom;
-        htmlErrors = [];
+        var dom = HTMLParser(html, {});
+        htmlErrors.length = 0;
 
         for(var i=0,l=rules.length; i<l; i++){
             rules[i].call(this, html, dom);
         }
-        err = err.concat(htmlErrors);
-        return err;
+
+        return {
+            res: {
+                css: res.css,
+                js : res.js,
+                img: res.img,
+                fla: res.fla
+            },
+            htmlSize: S.byteLength(html),
+            htmlErr: htmlErrors
+        }
     };
 
 	this.HTMLtoXML = function( html ) {

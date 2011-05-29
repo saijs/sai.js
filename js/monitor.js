@@ -7,7 +7,8 @@
  */
 
 window.Monitor = (function(){
-    var REPORT_SERVER = "/m.gif";
+    //var MONITOR_SERVER = "/m.gif";
+    var MONITOR_SERVER = "http://ecmng.sit.alipay.net:7788/m.gif";
     // Client info.
     var Ev = {
         os:navigator.appVersion,
@@ -181,8 +182,11 @@ window.Monitor = (function(){
                 d[k] = data[k];
             }
         }
-        send(REPORT_SERVER, "d="+JSON.toString(d));
-        //send(REPORT_SERVER, compress(JSON.toString(d)));
+        //alert(compress(JSON.toString(d)).length)
+        var s = JSON.toString(d);
+        if(window.console && window.console.log){window.console.log("SEND: ", s.length, s);}
+        s = compress(s);
+        send(MONITOR_SERVER, s);
     };
 
      var JSON = {
@@ -198,6 +202,8 @@ window.Monitor = (function(){
 			case 'boolean':
 			case 'null':
 				return String(obj);
+            case 'undefined':
+                return 'null';
             case 'object':
                 if(null == obj){
                     return 'null';
@@ -260,6 +266,7 @@ window.Monitor = (function(){
     // 2. sit ? HTMLint : DOMLint;
     // 3. HTMLint || DOMLint
     DOM.ready(function(){
+        var debug = true;
         window.setTimeout(function(){
             if("undefined" != typeof(DOMLint)){
                 var htmlErr = DOMLint.parse();
@@ -268,7 +275,7 @@ window.Monitor = (function(){
             //var sit = location.hostname.indexOf("alipay.net")>=0;
             var sit = true;
             if(sit && "undefined" != typeof(HTMLint)){
-                AJAX.send(location.href, "get", "", function(st, re){
+                AJAX.send(location.href+"?"+Math.random(), "get", "", function(st, re){
                     if(st=="ok"){
                         var html = re.responseText;
                         var htmlErr = HTMLint(html);

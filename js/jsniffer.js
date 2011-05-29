@@ -77,7 +77,7 @@ var JSniffer = (function(){
         var d = {
             file: file,
             ln: line,
-            msg: msg+", "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller,
+            msg: msg+", "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
         };
         Monitor.report(d);
         return !isDebug;
