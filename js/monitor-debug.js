@@ -188,9 +188,9 @@ window.monitor.Monitor = (function(){
             }
             if(dbg && "undefined"!=typeof(window.monitor.HTMLint)){
                 var url = location.href;
-                if(dbg){
+                if(window.monitor.nocache){
                     // TODO: 增加避免缓存的设置。
-                    //url = url + (location.search.indexOf("?")==0 ? "&" : "?")+Math.random();
+                    url = url + (location.search.indexOf("?")==0 ? "&" : "?")+window.monitor.S.rand();
                 }
                 AJAX.send(url, "get", "", function(st, re){
                     if(st=="ok"){
