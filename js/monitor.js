@@ -14,11 +14,13 @@ window.monitor = {
     // 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
     // 启用 HTMLint
     debug: true,
+    // 添加随机数避免缓存。
+    nocache: true,
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
     // 这个一般设置为 true 就好了。
     rethrow: true,
     // XXX: 发布时需修改服务器地址。
-    MONITOR_SERVER: "http://ecmng.sit.alipay.net:7788/m.gif",
+    MONITOR_SERVER: "http:\/\/ecmng.sit.alipay.net:7788/m.gif",
     // Client info.
     Ev: {
         ua:navigator.userAgent,
@@ -83,6 +85,9 @@ window.monitor = {
             if(typeof(str)=="undefined"){return false;}
             return str == str.toLowerCase();
         },
+        repeat : function(str, times){
+            return new Array((times||0)+1).join(str);
+        },
         rand: function(){
             var s = ""+Math.random(), l=s.length;
             return s.substr(2,2) + s.substr(l-2);
@@ -123,5 +128,5 @@ window.monitor = {
         if(window.monitor.debug && window.console && window.console.log){window.console.log("SEND: ", s.length, s);}
         if(window.monitor.debug && typeof(compress)!="undefined"){s = compress(s);}
         window.monitor.send(window.monitor.MONITOR_SERVER, s);
-    },
+    }
 };

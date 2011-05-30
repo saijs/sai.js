@@ -33,21 +33,15 @@ window.monitor.JSniffer = (function(){
             }
             if(b){return s;}
             for (i=0,l=s.length,p=""; i<l; i++){
-                p=S.repeat("    ", i);
+                p=window.monitor.S.repeat("    ", i);
                 t = t+p+"`- "+s[i]+"\n";
             }
             //for (i=0,l=s.length,p=""; i<l; i++){
-                //p=S.repeat("  ", i);
+                //p=window.monitor.S.repeat("  ", i);
                 //t = t+p+"function "+s[i]+"(){"+(i==l-1?"":"\n");
                 //e = (i==l-1?"":"\n"+p)+"}"+e;
             //}
             return t;
-        }
-    };
-    // String.
-    var S = {
-        repeat : function(str, times){
-            return new Array((times||0)+1).join(str);
         }
     };
 
