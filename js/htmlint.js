@@ -287,9 +287,10 @@
 				}
 
 			} else {
-                // TODO: 标签大小写不同，空格等会造成问题。
                 var t = "</"+stack.last().tagName+">";
-                index = html.indexOf(t);
+                // toLowerCase() 用于避免标签大小写不同，空格等会造成问题。
+                // 正则表达式非贪婪匹配 `(?:.|\s)*?</tagName>` 对于大脚本段的回溯会有性能问题。
+                index = html.toLowerCase().indexOf(t);
                 if(index >= 0){
                     var text = html.substring(0, index);
                     if(handler.chars){
