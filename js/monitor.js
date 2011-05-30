@@ -65,6 +65,29 @@ window.monitor = {
             }
         }
     },
+    // String.
+    S: {
+        startsWith: function(str, ch){
+            if(typeof(str)=="undefined" || typeof(ch)=="undefined"){return false;}
+            return str.indexOf(ch) == 0;
+        },
+        endsWith: function(str, ch){
+            if(typeof(str)=="undefined" || typeof(ch)=="undefined"){return false;}
+            return str.lastIndexOf(ch) == (str.length-ch.length);
+        },
+        byteLength: function(str){
+            if(!str){return 0;}
+            return str.replace(/[^\x00-\xff]/g, "xx").length;
+        },
+        isLower: function(str){
+            if(typeof(str)=="undefined"){return false;}
+            return str == str.toLowerCase();
+        },
+        rand: function(){
+            var s = ""+Math.random(), l=s.length;
+            return s.substr(2,2) + s.substr(l-2);
+        }
+    },
     send: function(url, data){
         if(data){
             var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
@@ -87,7 +110,9 @@ window.monitor = {
         if(!data){return;}
         var d = {
             url: window.monitor.Ev.url,
-            ua: window.monitor.Ev.ua
+            ua: window.monitor.Ev.ua,
+            // 避免缓存。
+            rand: window.monitor.S.rand()
         };
         for(var k in data){
             if(Object.prototype.hasOwnProperty.call(data, k)){
@@ -95,8 +120,8 @@ window.monitor = {
             }
         }
         var s = window.monitor.JSON.toString(d);
+        if(window.monitor.debug && window.console && window.console.log){window.console.log("SEND: ", s.length, s);}
         if(window.monitor.debug && typeof(compress)!="undefined"){s = compress(s);}
         window.monitor.send(window.monitor.MONITOR_SERVER, s);
-        if(window.monitor.debug && window.console && window.console.log){window.console.log("SEND: ", s.length, s);}
     },
 };

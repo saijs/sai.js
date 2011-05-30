@@ -31,12 +31,6 @@ window.monitor.DOMLint = (function(){
         if(debug && window.console && window.console.log){window.console.log("DOMLint: ", msg, err);}
         //else{throw new Error(msg);}
     }
-    // String.
-    var S = {
-        byteLength: function(str){
-            return str.replace(/[^\x00-\xff]/g, "xx").length;
-        }
-    };
     // URI, URL, Links, Location...
     var URI = {
         // 获得Archor对象，便于获取其protocol,host...属性。
@@ -439,7 +433,7 @@ window.monitor.DOMLint = (function(){
                 img: res.img,
                 fla: res.fla
             },
-            htmlSize: S.byteLength(D.outerHTML(document.documentElement)),
+            htmlSize: window.monitor.S.byteLength(D.outerHTML(document.documentElement)),
             htmlErr: htmlErrors
         }
     }

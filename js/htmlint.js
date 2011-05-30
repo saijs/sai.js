@@ -156,22 +156,6 @@
         return re;
     }
 
-    // String.
-    var S = {
-        startsWith: function(str, ch){
-            return str.indexOf(ch) == 0;
-        },
-        endsWith: function(str, ch){
-            return str.lastIndexOf(ch) == (str.length-ch.length);
-        },
-        byteLength: function(str){
-            return str.replace(/[^\x00-\xff]/g, "xx").length;
-        },
-        isLower: function(str){
-            return str == str.toLowerCase();
-        }
-    };
-
     var errorCodes = {
         doctypeIllegal: 0,
         charsetIllegal: 1,
@@ -390,9 +374,14 @@
             var attrs = [];
 
             rest.replace(attr, function(match, name) {
-                if(!(S.startsWith(arguments[2], '"') && S.endsWith(arguments[2], '"')) &&
-                  !(S.startsWith(arguments[2], "'") && S.endsWith(arguments[2], "'"))){
-                    log("html", line, lines[line]+":", tagName+"["+name+"] missing quotes.", errorCodes.attrMissingQuote);
+                if(!arguments[2]){
+                    // Attribute without value.
+                    if(!fillAttrs[name]){
+                    log("html", line, lines[line]+":", tagName+"["+name+"] missing value.", errorCodes.attrIllegal);
+                    }
+                }else if(!(window.monitor.S.startsWith(arguments[2], '"') && window.monitor.S.endsWith(arguments[2], '"')) &&
+                  !(window.monitor.S.startsWith(arguments[2], "'") && window.monitor.S.endsWith(arguments[2], "'"))){
+                    log("html", line, lines[line]+":", tagName+"["+name+"] missing quotes.", errorCodes.attrIllegal);
                 }
                 var value = arguments[3] ? arguments[3] :
                     arguments[4] ? arguments[4] :
@@ -509,7 +498,7 @@
             for(var i=0,tn,id,l=elems.length; i<l; i++){
                 if(elems[i].tagName=="!DOCTYPE" || elems[i].tagName=="!--"){continue;}
                 // tagName.
-                if(!S.isLower(elems[i].tagName)){
+                if(!window.monitor.S.isLower(elems[i].tagName)){
                     log("html", elems[i].startLine, elems[i].startTag, "tagName must bu lowerCase.", errorCodes.tagNameIllegal);
                 }
                 tn = elems[i].tagName.toLowerCase();
@@ -741,8 +730,8 @@
                 img: res.img,
                 fla: res.fla
             },
-            htmlSize: S.byteLength(html),
-            htmlErr: htmlErrors
+            htmlSize: window.monitor.S.byteLength(html),
+            htmlError: htmlErrors
         }
     };
 

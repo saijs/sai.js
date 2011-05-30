@@ -62,13 +62,15 @@ window.monitor.JSniffer = (function(){
     //}
     window.onerror = function(msg, file, line){
         var d = {
-            file: file,
-            ln: line,
-            msg: msg+", "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
+            jsError: {
+                file: file,
+                ln: line,
+                msg: msg//+" | "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
+            }
         };
         window.monitor.report(d);
-        // true: re-throw error, false: capture error.
-        return window.monitor.rethrow;
+        // false: re-throw error, true: capture error.
+        return !window.monitor.rethrow;
     };
 
 })();
