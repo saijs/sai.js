@@ -180,6 +180,8 @@ window.monitor.Monitor = (function(){
     // 2. sit ? HTMLint : DOMLint;
     // 3. HTMLint || DOMLint
     DOM.ready(function(){
+        window.monitor.endTime = new Date();
+
         var dbg = window.monitor.debug;
         window.setTimeout(function(){
             if("undefined" != typeof(window.monitor.DOMLint)){
@@ -187,21 +189,33 @@ window.monitor.Monitor = (function(){
                 window.monitor.report(htmlErr);
             }
             if(dbg && "undefined"!=typeof(window.monitor.HTMLint)){
-                var url = location.href;
+                // Note: 目前要求 window。monitor.url 是不带 search & hash 的部分。
+                // 如果日后需要带上这些部分（概率很小），这里需要调整。
+                var url = window.monitor.url + location.search;
                 if(window.monitor.nocache){
-                    // TODO: 增加避免缓存的设置。
-                    url = url + (location.search.indexOf("?")==0 ? "&" : "?")+window.monitor.S.rand();
+                    url = url + (location.search.indexOf("?")==0 ? "&" : "?") +
+                        window.monitor.S.rand();
                 }
                 AJAX.send(url, "get", "", function(st, re){
                     if(st=="ok"){
                         var html = re.responseText;
-                        var htmlErr = window.monitor.HTMLint(html);
-                        window.monitor.report(htmlErr);
+                        var size = window.monitor.S.byteLength(html);
+                        var time = window.monitor.endTime - window.monitor.startTime;
+                        var lint = window.monitor.HTMLint(html);
+                        window.monitor.report({
+                            htmlSize: size,
+                            res: lint.res,
+                            domready: time
+                        });
+                        window.monitor.report({
+                            htmlError: lint.htmlError
+                        });
                     }
                 });
             }
         }, 800);
     });
+    /*
     // Debug.
     var D = {
         // debug status on/off.
@@ -265,7 +279,7 @@ window.monitor.Monitor = (function(){
             if(!D._box){D.init();}
             D._box.style.display="none";
         }
-    };
+    };*/
 
     return {
         show: D.show,

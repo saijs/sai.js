@@ -1,5 +1,5 @@
 /**
- * @overview
+ * 前端监控脚本的公共库。
  *
  * @author 闲耘™ (hotoo.cn[AT]gmail.com)
  * @version 2011/05/29
@@ -10,27 +10,85 @@
 
 // namespace.
 window.monitor = {
+    startTime: new Date(),
     // XXX: 发布时需设置为 false。
-    // 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
-    // 启用 HTMLint
-    debug: true,
-    // 添加随机数避免缓存。
+    // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
+    //
+    // 非调试模式：
+    // 1. 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
+    // 2. 启用 HTMLint.
+    // 3. 启用 CSSLint.
+    debug: !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0) ||
+        "debug"==location.hash || true,
+
+    // XXX: 添加随机数避免缓存。
     nocache: true,
+
+    // XXX: 发布时需修改服务器地址。
+    server: "http:\/\/ecmng.sit.alipay.net:7788\/m.gif",
+
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
     // 这个一般设置为 true 就好了。
     rethrow: true,
-    // XXX: 发布时需修改服务器地址。
-    MONITOR_SERVER: "http:\/\/ecmng.sit.alipay.net:7788/m.gif",
-    // Client info.
-    Ev: {
-        ua:navigator.userAgent,
-        url:location.href
+    // userAgent.
+    ua: navigator.userAgent,
+    // page url, without search & hash.
+    url: location.protocol+"\/\/"+location.hostname+location.pathname,
+    htmlErrorCodes: {
+        // 缺少DOCTYPE，或DOCTYPE不合法。
+        doctypeIllegal: 0,
+
+        // 编码未设置，或编码设置不合法。
+        charsetIllegal: 1,
+
+        // HTTPS 资源中包含不安全资源。
+        protocolIllegal: 2,
+
+        // 属性不合法。
+        attrIllegal: 3,
+
+        // 缺少 rel 属性，或 rel 属性不合法
+        relIllegal: 4,
+
+        // 标签嵌套不合法。
+        tagsNestedIllegal: 5,
+
+        // 内联 JavaScript 脚本。
+        inlineJS: 6,
+
+        // 内联 CSS 脚本。
+        inlineCSS: 7,
+
+        // 链接缺少 href 属性，或 href 指向不合法。
+        linksHrefIllegal: 8,
+
+        // 存在重复 ID。
+        idDuplicated: 9,
+
+        // 标签名不合法（例如：非小写字符）。
+        tagNameIllegal: 10,
+
+        // 过时的标签。
+        tagsDeprecated: 11
+    },
+    res: {
+        img:[],
+        css:[],
+        js:[],
+        fla:[]
+    },
+    B: {
+        ie: navigator.userAgent.indexOf("MSIE") > 0 && !window.opera
     },
     JSON: {
         escape: function(str){
             return str.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
         },
         toString: function(obj){
+            if(window.JSON && "function"==typeof(window.JSON.stringify)){
+                return window.JSON.stringify(obj);
+            }
+
             switch(typeof obj){
             case 'string':
                 return '"' + window.monitor.JSON.escape(obj) + '"';
@@ -67,6 +125,41 @@ window.monitor = {
             }
         }
     },
+    // URI, URL, Links, Location...
+    URI: {
+        // 获得Archor对象，便于获取其protocol,host...属性。
+        // 可惜IE直接复制相对地址无法获得正确的属性，需要设置绝对地址。
+        // @param {String"} uri 绝对/相对地址。
+        // @usage URI.parse(img.src); || img.getAttribute("src");
+        //        img.src - 自动转成绝对地址。
+        //        img.getAttribute("src") - 原样取出属性值。
+        reFolderExt:/[^\/]*$/,
+        reProtocol:/^\w+:/,
+        parse: function(uri){
+            if(undefined === uri || typeof(uri)!="string"){
+                throw new TypeError("required string argument.");
+            }
+            var host = location.protocol + "\/\/" + location.hostname,
+                base = host + location.pathname.replace(window.monitor.URI.reFolderExt, uri);
+            var a = document.createElement("a");
+            if(!window.monitor.URI.reProtocol.test(uri)){
+                if(uri.indexOf("/")==0){
+                    uri = location.protocol + "\/\/" + location.hostname + uri;
+                    //uri = host + uri;
+                }else{
+                    uri = location.protocol + "\/\/" + location.hostname +
+                        location.pathname.replace(window.monitor.URI.reProtocol, uri);
+                }
+            }
+            a.setAttribute("href", uri);
+            return a;
+        },
+        path: function(uri){
+			var idx = uri.indexOf("?");
+			if(idx < 0){return uri;}
+            return uri.substring(0, idx);
+        }
+    },
     // String.
     S: {
         startsWith: function(str, ch){
@@ -88,12 +181,31 @@ window.monitor = {
         repeat : function(str, times){
             return new Array((times||0)+1).join(str);
         },
+        trim: function(str){
+            return str.replace(/^\s+/, '').replace(/\s+$/, '');
+        },
         rand: function(){
             var s = ""+Math.random(), l=s.length;
             return s.substr(2,2) + s.substr(l-2);
         }
     },
+    identify: function(){
+        var b = document.cookie + navigator.userAgent + navigator.plugins.length + Math.random(),
+            n=0,
+            rand = ""+Math.random();
+        for(var i=0,l=b.length; i<l; i++){
+            n += i * b.charCodeAt(i);
+        }
+        return n.toString(parseInt(Math.random()*10 + 16));
+    },
     send: function(url, data){
+        if(!data){return;}
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("SEND: ", data.length, data);
+        }
+        if(window.monitor.debug && typeof(compress)!="undefined"){
+            data = compress(data);
+        }
         if(data){
             var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
         }
@@ -111,22 +223,45 @@ window.monitor = {
 
         img.src = url;
     },
+    url_len: navigator.userAgent.indexOf("MSIE")>0 ? 2083 : 8190,
     report: function(data){
         if(!data){return;}
         var d = {
-            url: window.monitor.Ev.url,
-            ua: window.monitor.Ev.ua,
-            // 避免缓存。
-            rand: window.monitor.S.rand()
-        };
-        for(var k in data){
-            if(Object.prototype.hasOwnProperty.call(data, k)){
-                d[k] = data[k];
+                url: window.monitor.url,
+                ua: window.monitor.ua,
+                id: window.monitor.identify(),
+                // 避免缓存。
+                rand: window.monitor.S.rand()
+            },
+            JSON = window.monitor.JSON,
+            send = window.monitor.send,
+            server = window.monitor.server;
+        if("htmlError" in data){
+            var list = [], s="", len=window.monitor.url_len - JSON.toString(d).length - 10;
+            var arr = [];
+            for(var i=0,l=data.htmlError.length; i<l; i++){
+                if(JSON.toString(arr.concat(data.htmlError[i])).length < len){
+                    arr.push(data.htmlError[i]);
+                }else{
+                    d.htmlError = arr;
+                    send(server, JSON.toString(d));
+                    arr.length = 0;
+                    arr.push(data.htmlError[i]);
+                }
             }
+            if(arr.length > 0){
+                d.htmlError = arr;
+                send(server, JSON.toString(d));
+                arr.length = 0;
+            }
+        }else{
+            for(var k in data){
+                if(Object.prototype.hasOwnProperty.call(data, k)){
+                    d[k] = data[k];
+                }
+            }
+            var s = JSON.toString(d);
+            send(server, s);
         }
-        var s = window.monitor.JSON.toString(d);
-        if(window.monitor.debug && window.console && window.console.log){window.console.log("SEND: ", s.length, s);}
-        if(window.monitor.debug && typeof(compress)!="undefined"){s = compress(s);}
-        window.monitor.send(window.monitor.MONITOR_SERVER, s);
     }
 };

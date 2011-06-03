@@ -26,37 +26,25 @@
  *
  */
 
-(function(){
-    // URI, URL, Links, Location...
-    var URI = {
-        // 获得Archor对象，便于获取其protocol,host...属性。
-        // 可惜IE直接复制相对地址无法获得正确的属性，需要设置绝对地址。
-        // @param {String"} uri 绝对/相对地址。
-        // @usage URI.parse(img.src); //! img.getAttribute("src");
-        //        URI.parse(cssLink.href);
-        //        URI.parse(script.src);
-        reFolderExt:/[^\/]*$/,
-        reProtocol:/^\w+:/,
-        parse: function(uri){
-            if(undefined === uri || typeof(uri)!="string"){
-                throw new TypeError("required string argument.");
-            }
-            var host = location.protocol + "\/\/" + location.hostname,
-                base = host + location.pathname.replace(URI.reFolderExt, uri);
-            var a = document.createElement("a");
-            if(!URI.reProtocol.test(uri)){
-                if(uri.indexOf("/")==0){
-                    uri = location.protocol + "\/\/" + location.hostname + uri;
-                    //uri = host + uri;
-                }else{
-                    uri = location.protocol + "\/\/" + location.hostname +
-                        location.pathname.replace(URI.reProtocol, uri);
-                }
-            }
-            a.setAttribute("href", uri);
-            return a;
-        }
-    };
+window.monitor.HTMLint = (function(){
+    var URI         = window.monitor.URI,
+        S           = window.monitor.S,
+        debug       = window.monitor.debug,
+        errorCodes  = window.monitor.htmlErrorCodes,
+        htmlErrors  = [],
+        res         = {
+            img: [],
+            css: [],
+            js : [],
+            fla: []
+        };
+
+    function log(type, line, source, msg, code){
+        source = window.monitor.S.trim(source);
+        if(debug && window.console && window.console.log){window.console.log("HTMLint: [line:"+line+"] "+"[code:"+code+"]"+"[message:"+msg+"]"+"[source:"+source+"]");}
+        htmlErrors.push({ln:line, err:code, code:encodeURIComponent(source)});
+    }
+
     // HTML Node Object.
     var Node = function(){
         this.tagName = null;
@@ -111,12 +99,6 @@
         }
         return a;
     };
-    var htmlErrors = [];
-    function log(type, line, source, msg, code){
-        var debug = !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0);
-        if(debug && window.console && window.console.log){window.console.log("HTMLint: [line:"+line+"] "+"[code:"+code+"]"+"[message:"+msg+"]"+"[source:"+source+"]");}
-        htmlErrors.push({ln:line, err:code, code:encodeURIComponent(source)});
-    }
 
 	// Regular Expressions for parsing tags and attributes
 	var startTag = /^<(\w+)((?:\s+[\w:-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
@@ -156,28 +138,7 @@
         return re;
     }
 
-    var errorCodes = {
-        doctypeIllegal: 0,
-        charsetIllegal: 1,
-        protocolIllegal: 2,
-        attrIllegal: 3,
-        relIllegal: 4,
-        tagsNestedIllegal: 5,
-        inlineJS: 6,
-        inlineCSS: 7,
-        linksHrefIllegal: 8,
-        idDuplicated: 9,
-        tagNameIllegal: 10,
-        tagsDeprecated: 11
-    };
-    var res={
-        img:[],
-        css:[],
-        js:[],
-        fla:[]
-    };
-
-	var HTMLParser = window.monitor.HTMLParser = function( html, handler ) {
+	var HTMLParser = function( html, handler ) {
         // stack = [{line:1, tag:"<div id=\"demo\">", tagName:"div"}]
 		var index, match, stack = [], last = html;
 		stack.last = function(){
@@ -242,7 +203,7 @@
 						match[0].replace( endTag, parseEndTag );
                         line += getLine(match[0]);
                     }else{
-                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed."+stack.join(","), errorCodes.tagsNestedIllegal);
                         index = html.indexOf("<");
                         line += getLine(html.substring(0, index));
                         html = html.substring(index);
@@ -409,11 +370,12 @@
 			// If no tag name is provided, clean shop
             if(!tagName){
                 for ( var pos = stack.length - 1; pos >= 0; pos-- ){
-                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed."+stack.join(","), errorCodes.tagsNestedIllegal);
 
+                    //!stack.pop();
                     currNode.endTag = tag;
                     currNode.endLine = line;
-                    currNode  = currNode.parentNode;
+                    currNode = currNode.parentNode;
                 }
             }else{
                 if(stack.last().tagName == tagName){
@@ -426,7 +388,7 @@
                     currNode.endLine = line;
                     currNode  = currNode.parentNode;
                 }else{
-                    log("html", line, lines[stack.last().line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                    log("html", line, lines[stack.last().line], "tag "+stack.last().tagName+" unclosed."+tagName, errorCodes.tagsNestedIllegal);
                 }
             }
 		}
@@ -607,7 +569,7 @@
                 if(checkProtocol && "https:" != uri.protocol){
                     log("html", script[i].startLine, script[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
-                res.js.push(script[i].getAttribute("src"));
+                res.js.push(URI.path(script[i].getAttribute("src")));
             }
             for(var i=0,tag,l=link.length; i<l; i++){
                 type = link[i].getAttribute("type");
@@ -635,7 +597,7 @@
                 if(!link[i].hasAttribute("charset")){
                     log("html", link[i].startLine, link[i].startTag, "missing charset.", errorCodes.charsetIllegal);
                 }
-                res.css.push(link[i].getAttribute("href"));
+                res.css.push(URI.path(link[i].getAttribute("href")));
             }
             for(var i=0,l=img.length; i<l; i++){
                 var attrs = [];
@@ -655,7 +617,7 @@
                 if(attrs.length>0){
                     log("html", img[i].startLine, img[i].startTag, "missing "+attrs.join(), errorCodes.attrIllegal);
                 }
-                res.img.push(img[i].getAttribute("src"));
+                res.img.push(URI.path(img[i].getAttribute("src")));
             }
             var frames = iframe.concat(frame);
             for(var i=0,l=frames.length; i<l; i++){
@@ -679,7 +641,7 @@
                         if(checkProtocol && "https:" != uri.protocol){
                             log("html", params[i].startLine, params[j].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                         }
-                        res.fla.push(params[j].getAttribute("value"));
+                        res.fla.push(URI.path(params[j].getAttribute("value")));
                         break;
                     }
                 }
@@ -690,7 +652,7 @@
                 if(checkProtocol && "https:"!=uri.protocol){
                     log("html", embed[i].startLine, embed[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
-                res.fla.push(embed[i].getAttribute("src"));
+                res.fla.push(URI.path(embed[i].getAttribute("src")));
             }
         },
         // checkLinksUsage, 检测页面链接可用性，硬编码等
@@ -716,25 +678,39 @@
             }
         }
     ];
-    window.monitor.HTMLint = function(html){
+    var HTMLint = function(html){
         var dom = HTMLParser(html, {});
-        htmlErrors.length = 0;
 
         for(var i=0,l=rules.length; i<l; i++){
             rules[i].call(this, html, dom);
         }
 
         return {
-            res: {
-                css: res.css,
-                js : res.js,
-                img: res.img,
-                fla: res.fla
-            },
-            htmlSize: window.monitor.S.byteLength(html),
+            res: res,
             htmlError: htmlErrors
-        }
+        };
     };
+
+    return HTMLint;
+
+    //return {
+        //parse: HTMLParser,
+        //lint: HTMLint,
+        //getRes: function(){
+            //return res;
+        //},
+        //getErrors: function(){
+            //return htmlErrors;
+        //},
+        //clear: function(){
+            //res.img.length = 0;
+            //res.js.length = 0;
+            //res.css.length = 0;
+            //res.fla.length = 0;
+
+            //htmlErrors.length = 0;
+        //}
+    //};
 
 	function makeMap(str){
 		var obj = {}, items = str.split(",");

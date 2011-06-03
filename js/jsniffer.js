@@ -57,7 +57,7 @@ window.monitor.JSniffer = (function(){
     window.onerror = function(msg, file, line){
         var d = {
             jsError: {
-                file: file,
+                file: URI.path(file),
                 ln: line,
                 msg: msg//+" | "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
             }
