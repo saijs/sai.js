@@ -41,7 +41,7 @@ window.monitor.HTMLint = (function(){
 
     function log(type, line, source, msg, code){
         source = window.monitor.S.trim(source);
-        if(debug && window.console && window.console.log){window.console.log("HTMLint: [line:"+line+"] "+"[code:"+code+"]"+"[message:"+msg+"]"+"[source:"+source+"]");}
+        if(debug && window.console && window.console.log){window.console.log("HTMLint: line:"+line+", "+"code:"+code+", message:"+msg+", source:"+source+"");}
         htmlErrors.push({ln:line, err:code, code:encodeURIComponent(source)});
     }
 
@@ -203,7 +203,7 @@ window.monitor.HTMLint = (function(){
 						match[0].replace( endTag, parseEndTag );
                         line += getLine(match[0]);
                     }else{
-                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed."+stack.join(","), errorCodes.tagsNestedIllegal);
+                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
                         index = html.indexOf("<");
                         line += getLine(html.substring(0, index));
                         html = html.substring(index);
@@ -316,11 +316,12 @@ window.monitor.HTMLint = (function(){
             node.tagName = tagName;
             currNode.appendChild(node);
 
-			if ( block[ tagName ] ) {
-				while ( stack.last() && inline[ stack.last().tagName ] ) {
-					parseEndTag( "", stack.last().tagName );
-				}
-			}
+            //! Err...
+			//if ( block[ tagName ] ) {
+				//while ( stack.last() && inline[ stack.last().tagName ] ) {
+					//parseEndTag( "", stack.last().tagName );
+				//}
+			//}
 
 			if ( closeSelf[ tagName ] && stack.last().tagName == tagName ) {
 				parseEndTag( "", tagName );
@@ -370,7 +371,7 @@ window.monitor.HTMLint = (function(){
 			// If no tag name is provided, clean shop
             if(!tagName){
                 for ( var pos = stack.length - 1; pos >= 0; pos-- ){
-                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed."+stack.join(","), errorCodes.tagsNestedIllegal);
+                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed.", errorCodes.tagsNestedIllegal);
 
                     //!stack.pop();
                     currNode.endTag = tag;
