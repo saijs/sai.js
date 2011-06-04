@@ -184,6 +184,11 @@ window.monitor = {
         trim: function(str){
             return str.replace(/^\s+/, '').replace(/\s+$/, '');
         },
+        camelize: function (str){
+            return str.replace(/\-+([a-z])/g, function($0, $1){
+                return $1.toUpperCase();
+            });
+        },
         rand: function(){
             var s = ""+Math.random(), l=s.length;
             return s.substr(2,2) + s.substr(l-2);
