@@ -281,8 +281,8 @@ window.monitor.Monitor = (function(){
         }
     };*/
 
-    return {
-        show: D.show,
-        hide: D.hide
-    };
+    //return {
+        //show: D.show,
+        //hide: D.hide
+    //};
 })();
