@@ -23,6 +23,13 @@
  * HTMLtoDOM(htmlString, document.body);
  *
  * TODO: innerHTML
+ * TODO: flash, wmode=transparent|...
+ * XXX: rules = {
+ *          "!DOCTYPE":function(elem, html, dom){},
+ *          "!--":function(elem, html, dom){},
+ *          "html":function(elem, html, dom){},
+ *          "form":function(elem, html, dom){}
+ *      }
  *
  */
 
@@ -167,6 +174,7 @@ window.monitor.HTMLint = (function(){
                     node.startTag = match[0];
                     node.tagName = "!DOCTYPE";
                     node.startLine = line;
+                    node.endTag = ">";
                     currNode.appendChild(node);
 
                     line += getLine(match[0]);
@@ -180,16 +188,18 @@ window.monitor.HTMLint = (function(){
 							handler.comment( html.substring( 4, index ) );
 
                         node = new Node();
-                        node.startTag = html.substring(0, index);
+                        node.startTag = "<!--";
+                        node.innerHTML = html.substring(4, index);
                         node.tagName = "!--";
                         node.startLine = line;
+                        node.endTag = "-->";
                         currNode.appendChild(node);
 
                         line += getLine(html.substring(0, index));
                         node.endLine = line;
 						html = html.substring( index + 3 );
                     }else{
-                        log("html", line, lines[line], "comment unclosed.", errorCodes.tagsNestedIllegal);
+                        log("html", line, lines[line], "comment unclosed.", errorCodes.syntaxError);
                         index = html.indexOf("\n");
                         html = html.substring(index);
                     }
@@ -203,7 +213,7 @@ window.monitor.HTMLint = (function(){
 						match[0].replace( endTag, parseEndTag );
                         line += getLine(match[0]);
                     }else{
-                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.syntaxError);
                         index = html.indexOf("<");
                         line += getLine(html.substring(0, index));
                         html = html.substring(index);
@@ -218,7 +228,7 @@ window.monitor.HTMLint = (function(){
 						match[0].replace( startTag, parseStartTag );
                         line += getLine(match[0]);
                     }else{
-                        log("html", line, lines[line], "tag unclosed.", errorCodes.tagsNestedIllegal);
+                        log("html", line, lines[line], "tag unclosed.", errorCodes.syntaxError);
                         index = html.indexOf("<", 1);
                         if(index > -1){
                             line += getLine(html.substring(0, index));
@@ -240,7 +250,6 @@ window.monitor.HTMLint = (function(){
 
                     if(index < 0){
                         // Clean up any remaining tags
-                        // XXX: 错误处理。
                         parseEndTag();
                         return dom;
                     }
@@ -261,7 +270,7 @@ window.monitor.HTMLint = (function(){
                     line += getLine(text);
                     html = html.substring(index);
                 }else{
-                    log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                    log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
                 }
 				//html = html.replace(regexp_special[stack.last().tagName], function(all, text){
 					//text = text.replace(/<!--(.*?)-->/g, "$1")
@@ -279,7 +288,7 @@ window.monitor.HTMLint = (function(){
 			}
 
             if ( html == last ){
-                log("html", line, lines[line], "Parse Error.", errorCodes.tagsNestedIllegal);
+                log("html", line, lines[line], "Parse Error.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
 
                 return dom;
             }
@@ -324,27 +333,36 @@ window.monitor.HTMLint = (function(){
 			//}
 
 			if ( closeSelf[ tagName ] && stack.last().tagName == tagName ) {
+                log("html", line, stack.last().tag+"..."+lines[line], stack.last().tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
 				parseEndTag( "", tagName );
 			}
 
-			unary = empty[ tagName ] || !!unary;
+            if(empty[tagName] && !unary){
+                log("html", line, lines[line], tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+            }
+			unary = empty[tagName] || !!unary;
 
             if ( !unary ){
 				stack.push({"line": line, "tagName": tagName, "tag": tag});
                 currNode = node;
             }
 
-            var attrs = [];
+            var attrs = [], attrCache={};
 
             rest.replace(attr, function(match, name) {
+                if(attrCache.hasOwnProperty(name)){
+                    log("html", line, lines[line], tagName+"["+name+"] duplicated.", errorCodes.attrIllegal);
+                }
+                attrCache[name] = true;
+
                 if(!arguments[2]){
                     // Attribute without value.
                     if(!fillAttrs[name]){
-                    log("html", line, lines[line]+":", tagName+"["+name+"] missing value.", errorCodes.attrIllegal);
+                    log("html", line, lines[line], tagName+"["+name+"] missing value.", errorCodes.attrIllegal);
                     }
                 }else if(!(window.monitor.S.startsWith(arguments[2], '"') && window.monitor.S.endsWith(arguments[2], '"')) &&
                   !(window.monitor.S.startsWith(arguments[2], "'") && window.monitor.S.endsWith(arguments[2], "'"))){
-                    log("html", line, lines[line]+":", tagName+"["+name+"] missing quotes.", errorCodes.attrIllegal);
+                    log("html", line, lines[line], tagName+"["+name+"] missing quotes.", errorCodes.attrIllegal);
                 }
                 var value = arguments[3] ? arguments[3] :
                     arguments[4] ? arguments[4] :
@@ -371,7 +389,7 @@ window.monitor.HTMLint = (function(){
 			// If no tag name is provided, clean shop
             if(!tagName){
                 for ( var pos = stack.length - 1; pos >= 0; pos-- ){
-                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed.", errorCodes.tagsNestedIllegal);
+                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
 
                     //!stack.pop();
                     currNode.endTag = tag;
@@ -389,7 +407,7 @@ window.monitor.HTMLint = (function(){
                     currNode.endLine = line;
                     currNode  = currNode.parentNode;
                 }else{
-                    log("html", line, lines[stack.last().line], "tag "+stack.last().tagName+" unclosed."+tagName, errorCodes.tagsNestedIllegal);
+                    log("html", line, lines[stack.last().line], "tag "+stack.last().tagName+" unclosed."+tagName, errorCodes.tagsIllegal, errorCodes.tagUnclosed);
                 }
             }
 		}
@@ -398,19 +416,19 @@ window.monitor.HTMLint = (function(){
         // parse head.
         function(html, dom){
             //if(!reDoctype.test(html)){
-                //log("html", 0, "DOCTYPE 没有顶格。", errorCodes.doctypeIllegal);
+                //log("html", 0, "DOCTYPE 没有顶格", "DOCTYPE 没有顶格。", errorCodes.doctypeIllegal);
             //}
             var docLen = dom.getElementsByTagName("!DOCTYPE").length;
             if(docLen == 0){
-                log("html", 0, "没有设置 DOCTYPE。", errorCodes.doctypeIllegal);
+                log("html", 0, "missing DOCTYPE.", "missing DOCTYPE.", errorCodes.doctypeIllegal);
             }else if(docLen > 1){
-                log("html", docLen[1].startLine, "设置了超过 1 个 DOCTYPE。", errorCodes.doctypeIllegal);
+                log("html", docLen[1].startLine, "DOCTYPE too much.", "设置了超过 1 个 DOCTYPE。", errorCodes.doctypeIllegal);
             }
 
             var head = dom.getElementsByTagName("head");
             if(1 == head.length){
                 if(head[0].childNodes.length == 0){
-                    log("html", head[0].startLine, "missing document charset.", errorCodes.charseIllegal);
+                    log("html", head[0].startLine, "missing document charset.", "missing document charset.", errorCodes.charseIllegal);
                 }else{
                     var elem = head[0].childNodes[0];
                     if(elem.tagName && elem.tagName.toLowerCase()=="meta"){
@@ -419,7 +437,7 @@ window.monitor.HTMLint = (function(){
                             elem.getAttribute("http-equiv").toLowerCase()=="content-type" &&
                             elem.hasAttribute("content") &&
                             elem.getAttribute("content").indexOf("charset")>=0)){
-                                log("html", elem.startLine, "missing document charset");
+                                log("html", elem.startLine, "missing document charset", "missing document charset");
                         }
                     }
                 }
@@ -427,14 +445,14 @@ window.monitor.HTMLint = (function(){
                 if(1 == title.length){
                     // TODO: check title not empty.
                 }else if(0 == title.length){
-                    log("html", head[0].startLine, "missing title", errorCodes.tagsIllegal);
+                    log("html", head[0].startLine, "missing title", "missing title.", errorCodes.tagsIllegal);
                 }else{
-                    log("html", head[0].startLine, "too much titles", errorCodes.tagsIllegal);
+                    log("html", head[0].startLine, "too much titles", "too much titles.", errorCodes.tagsIllegal);
                 }
             }else if(0 == head.length){
-                log("html", 0, "missing head", errorCodes.tagsIllegal);
+                log("html", 0, "missing head", "missing head.", errorCodes.tagsIllegal);
             }else{
-                log("html", head[1].line, "too much heads", errorCodes.tagsIllegal);
+                log("html", head[1].line, "too much heads", "too much heads.", errorCodes.tagsIllegal);
             }
         },
         // checkStyle@import, 检测页内样式中是否有使用 @import
@@ -446,11 +464,11 @@ window.monitor.HTMLint = (function(){
                 // style 标签的嵌套。
                 //tag = styles[i].parentNode.tagName;
                 //if(tag && tag.toLowerCase() != "head"){
-                    //log("html", tag+">style", errorCodes.tagsNestedIllegal);
+                    //log("html", styles[i].startLine, tag+">style", "style must be in the head.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 //}
                 mat = styles[i].innerHTML.match(re);
                 if(mat){
-                    log("css", styles[i].startLine, mat.join(""), errorCodes.styleWithImport);
+                    log("css", styles[i].startLine, mat.join(""), "using @import.", errorCodes.cssIllegal, errorCodes.cssByImport);
                 }
             }
         },
@@ -459,15 +477,23 @@ window.monitor.HTMLint = (function(){
             var elems = dom.getElementsByTagName("*");
             var duplicateIDs=[], duplicateIDsCache={};
             var inlinejs = "onclick,onblur,onchange,oncontextmenu,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onmousedown,onmousemove,onmouseout,onmouseover,onmouseup,onresize,onscroll,onload,onunload,onselect,onsubmit,onbeforecopy,oncopy,onbeforecut,oncut,onbeforepaste,onpaste,onbeforeprint,onpaint,onbeforeunload".split(",");
+            var reSpaceLeft = /^\s+/, reSpaceRight = /\s+$/;
             for(var i=0,tn,id,l=elems.length; i<l; i++){
-                if(elems[i].tagName=="!DOCTYPE" || elems[i].tagName=="!--"){continue;}
+                if(elems[i].tagName=="!DOCTYPE"){continue;}
+                if(elems[i].tagName=="!--"){
+                    if(!reSpaceLeft.test(elems[i].innerHTML) || !reSpaceRight.test(elems[i].innerHTML)){
+                        var cmt = elems[i].innerHTML;
+                        log("html", elems[i].startLine, elems[i].startTag+(cmt.length < 20 ? cmt : cmt.substr(0, 20)+"...")+elems[i].endTag, "comment required space at start and end.", errorCodes.commentIllegal);
+                    }
+                    continue;
+                }
                 // tagName.
                 if(!window.monitor.S.isLower(elems[i].tagName)){
-                    log("html", elems[i].startLine, elems[i].startTag, "tagName must bu lowerCase.", errorCodes.tagNameIllegal);
+                    log("html", elems[i].startLine, elems[i].startTag, "tagName must bu lowerCase.", errorCodes.tagsIllegal);
                 }
                 tn = elems[i].tagName.toLowerCase();
                 if("font"==tn || "s"==tn || "u"==tn){
-                    log("html", elems[i].startLine, elems[i].startTag, "tagName deprecated.", errorCodes.tagsDeprecated);
+                    log("html", elems[i].startLine, elems[i].startTag, "tagName deprecated.", errorCodes.tagsIllegal, errorCodes.tagsDeprecated);
                 }
                 // duplicate id.
                 if(elems[i].hasAttribute("id")){
@@ -488,7 +514,7 @@ window.monitor.HTMLint = (function(){
                 }
             }
             if(duplicateIDs.length > 0){
-                log("html", 0, duplicateIDs.join(","), "duplicate id.", errorCodes.idDuplicated);
+                log("html", 0, "duplicate id:"+duplicateIDs.join(","), "duplicate id.", errorCodes.attrIllegal, errorCodes.idDuplicated);
             }
 
             // We can't check tag p in p on the DOM.
@@ -504,41 +530,45 @@ window.monitor.HTMLint = (function(){
                         case "strong":
                             break;
                         default:
-                            log("html", pc[j].startLine, "p>"+pc[j].startTag, errorCodes.tagsNestedIllegal);
+                            log("html", pc[j].startLine, "p>"+pc[j].startTag, "tags in p just a,em,span,strong.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                     }
                 }
             }
             // document.getElementsByTagName("p")[i].getElementsByTagName("p").length;
             // ul>li, ol>li
+            // TODO: 正向匹配。
             var li = dom.getElementsByTagName("li");
             for(var i=0,tag,l=li.length; i<l; i++){
                 tag = li[i].parentNode.tagName.toLowerCase();
                 if("ul"!=tag && "ol"!=tag){
-                    log("html", li[i].startLine, tag+">"+li[i].startTag, errorCodes.tagsNestedIllegal);
+                    log("html", li[i].startLine, tag+">"+li[i].startTag, "ul,ol 中嵌套 li", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 }
             }
             // dl>dt
+            // TODO: 正向匹配。
             var dt = document.getElementsByTagName("dt");
             for(var i=0,tag,l=dt.length; i<l; i++){
                 tag = dt[i].parentNode.tagName.toLowerCase();
                 if("dl" != tag){
-                    log("html", dt[i].startLine, tag+">"+dt[i].startTag, errorCodes.tagsNestedIllegal);
+                    log("html", dt[i].startLine, tag+">"+dt[i].startTag, "dl 中嵌套 dt", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 }
             }
             // dl>dd
+            // TODO: 正向匹配。
             var dd = document.getElementsByTagName("dd");
             for(var i=0,tag,l=dd.length; i<l; i++){
                 tag = dd[i].parentNode.tagName.toLowerCase();
                 if("dl" != tag){
-                    log("html", dd[i].startLine, tag+">"+dd[i].startTag, errorCodes.tagsNestedIllegal);
+                    log("html", dd[i].startLine, tag+">"+dd[i].startTag, "dl 中嵌套 dd", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 }
             }
             // tr>td
+            // TODO: 正向匹配。
             var td = document.getElementsByTagName("td");
             for(var i=0,tag,l=td.length; i<l; i++){
                 tag = td[i].parentNode.tagName.toLowerCase();
                 if("tr" != tag){
-                    log("html", td[i].startLine, tag+">"+td[i].startTag, errorCodes.tagsNestedIllegal);
+                    log("html", td[i].startLine, tag+">"+td[i].startTag, "tr 中嵌套 td", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 }
             }
         },
@@ -560,7 +590,7 @@ window.monitor.HTMLint = (function(){
             for(var i=0,uri,tag,l=script.length; i<l; i++){
                 //tag = script[i].parentNode.tagName.toLowerCase();
                 //if("body" != tag){
-                    //log("html", script[i].startLine, tag+">"+script[i].startTag, errorCodes.tagsNestedIllegal);
+                    //log("html", script[i].startLine, tag+">"+script[i].startTag, "script 建议放在 body 中。", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 //}
                 if(!script[i].hasAttribute("src")){continue;}
                 if(!script[i].hasAttribute("charset")){
@@ -579,11 +609,11 @@ window.monitor.HTMLint = (function(){
                 // link 标签的嵌套。
                 //tag = link[i].parentNode.tagName.toLowerCase();
                 //if("head" != tag){
-                    //log("html", link[i].startLine, tag+">"+link[i].startTag, "tags nested error.", errorCodes.tagsNestedIllegal);
+                    //log("html", link[i].startLine, tag+">"+link[i].startTag, "tags nested error.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 //}
                 // All links need rel attr.
                 if(!link[i].hasAttribute("rel")){
-                    log("html", link[i].startLine, link[i].startTag, "missing [rel]", errorCodes.relIllegal);
+                    log("html", link[i].startLine, link[i].startTag, "missing [rel]", errorCodes.attrIllegal);
                     continue;
                 }
                 // favicon, stylesheet, ...
@@ -620,10 +650,11 @@ window.monitor.HTMLint = (function(){
                 }
                 res.img.push(URI.path(img[i].getAttribute("src")));
             }
-            var frames = iframe.concat(frame);
-            for(var i=0,l=frames.length; i<l; i++){
-                uri=URI.parse(frames[i].getAttribute("src"));
-                if(checkProtocol && "https:" != uri.protocol){
+            var frames = iframe.concat(frame), re_empty_uri=/^javascript:(['"])\1;?$/;
+            for(var i=0,uri,src,l=frames.length; i<l; i++){
+                src = frames[i].getAttribute("src");
+                uri=URI.parse(src);
+                if(checkProtocol && ("https:" != uri.protocol || re_empty_uri.test(src))){
                     log("html", frames[i].startLine, frames[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
                 }
             }
@@ -656,6 +687,80 @@ window.monitor.HTMLint = (function(){
                 res.fla.push(URI.path(embed[i].getAttribute("src")));
             }
         },
+        // checkForms, 检测文档中的表单元素是否符合规范
+        function(html,dom){
+            var fs = dom.getElementsByTagName("form");
+            var fs_elems_ids = {};
+            for(var i=0,fn,l=fs.length; i<l; i++){
+                if(fs[i].hasAttribute("id")){
+                    fn = "#"+fs[i].getAttribute("id");
+                }else if(fs[i].hasAttribute("name")){
+                    fn = "form[name="+fs[i].getAttribute("id")+"]";
+                }else{
+                    fn = "document.forms["+i+"]";
+                }
+                var elems = fs[i].getElementsByTagName("*");
+                for(var j=0,id,type,name,submitCount=0,html,m=elems.length; j<m; j++){
+                    switch(elems[j].tagName.toLowerCase()){
+                    case "input":
+                    case "button":
+                        if(elems[j].hasAttribute("type")){
+                            type = elems[j].getAttribute("type").toLowerCase();
+                            // XXX: 表单不允许有多个 submit?
+                            //if(type=="submit" && (++submitCount > 1)){
+                                //log("html", elems[j].startLine, elems[j].startTag, "too much more submit buttons.", errorCodes.tagsIllegal);
+                            //}
+                        }else{
+                            log("html", elems[j].startLine, elems[j].startTag, "missing attribute: [type].", errorCodes.attrIllegal);
+                        }
+                        //!break;
+                    case "select":
+                    case "textarea":
+                        html = fn+": "+elems[j].startTag;
+                        // cache elements ids for label test.
+                        if(elems[j].hasAttribute("id")){
+                            id = elems[j].getAttribute("id");
+                            if("id"==id || "submit"==id){
+                                log("html", elems[j].startLine, html, "id不合法。", errorCodes.formElementNameIllegal);
+                            }
+                            fs_elems_ids["ID_"+id] = true;
+                        }
+                        if(!elems[j].hasAttribute("name")){
+                            log("html", elems[j].startLine, html, "missing attribute: [name].", errorCodes.attrIllegal);
+                        }
+                        name = elems[j].getAttribute("name");
+                        if("submit"==name || "id"==name){
+                            log("html", elems[j].startLine, html, "[name] attribute illegal.", errorCodes.attrIllegal);
+                        }
+                        break;
+                    case "form":
+                        log("html", elems[j].startLine, "form "+elems[j].startTag, "form nested illegal.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
+                        break;
+                    //case "fieldset":
+                    default:
+                        continue;
+                    }
+                }
+            }
+            // 检测文档中的label标签是否有添加for属性
+            var labs = dom.getElementsByTagName("label");
+            for(var i=0,id,html,l=labs.length; i<l; i++){
+                html = labs[i].startTag;
+                if(!labs[i].hasAttribute("for")){
+                    log("html", labs[i].startLine, html, "missing attribute: [for]", errorCodes.attrIllegal);
+                    continue;
+                }
+                id = labs[i].getAttribute("for");
+                if(!id){
+                    log("html", labs[i].startLine, html, "attribute [for] missing a value.", errorCodes.attrIllegal);
+                    continue;
+                }
+                if(!fs_elems_ids["ID_"+id]){
+                    log("html", labs[i].startLine, html, "#"+id+" not exist.", errorCodes.attrIllegal);
+                    continue;
+                }
+            }
+        },
         // checkLinksUsage, 检测页面链接可用性，硬编码等
         function(html, dom){
             var links = dom.getElementsByTagName("a");
@@ -673,7 +778,7 @@ window.monitor.HTMLint = (function(){
                 if((!debug && uri.hostname.indexOf(".alipay.net")>0) ||
                     uri.hostname.indexOf("localhost")==0 ||
                     0==href.indexOf("$")){ // href="$xxServer.getURI('...')"
-                    log("html", links[i].startLine, links[i].startTag, "a[href] illegal.", errorCodes.linksHrefIllegal);
+                    log("html", links[i].startLine, links[i].startTag, "a[href] illegal.", errorCodes.attrIllegal);
                 }
                 // XXX: 站内地址检测是否有效(404)，仅限于SIT环境。
             }

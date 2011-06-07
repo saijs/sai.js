@@ -25,7 +25,7 @@ window.monitor = {
     nocache: true,
 
     // XXX: 发布时需修改服务器地址。
-    server: "http:\/\/ecmng.sit.alipay.net:7788\/m.gif",
+    server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
 
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
     // 这个一般设置为 true 就好了。
@@ -35,41 +35,43 @@ window.monitor = {
     // page url, without search & hash.
     url: location.protocol+"\/\/"+location.hostname+location.pathname,
     htmlErrorCodes: {
+        syntaxError: 0,
+
         // 缺少DOCTYPE，或DOCTYPE不合法。
-        doctypeIllegal: 0,
+        doctypeIllegal: 1,
 
         // 编码未设置，或编码设置不合法。
-        charsetIllegal: 1,
+        charsetIllegal: 2,
 
         // HTTPS 资源中包含不安全资源。
-        protocolIllegal: 2,
+        protocolIllegal: 3,
 
         // 属性不合法。
-        attrIllegal: 3,
-
-        // 缺少 rel 属性，或 rel 属性不合法
-        relIllegal: 4,
-
-        // 标签嵌套不合法。
-        tagsNestedIllegal: 5,
+        attrIllegal: 4,
+            // 存在重复 ID。
+            idDuplicated: 40,
+            // 缺少 rel 属性，或 rel 属性不合法
+            // 链接缺少 href 属性，或 href 指向不合法。
 
         // 内联 JavaScript 脚本。
-        inlineJS: 6,
+        inlineJS: 5,
 
         // 内联 CSS 脚本。
-        inlineCSS: 7,
+        inlineCSS: 6,
 
-        // 链接缺少 href 属性，或 href 指向不合法。
-        linksHrefIllegal: 8,
+        // 标签未结束等语法错误。。。
+        tagsIllegal: 7,
+            // 标签嵌套不合法。
+            tagsNestedIllegal: 70,
+            // 过时的标签。
+            tagsDeprecated: 71,
+            // 标签未闭合，例如自闭合，或者非法闭合的标签。
+            tagUnclosed: 72,
 
-        // 存在重复 ID。
-        idDuplicated: 9,
+        commentIllegal: 8,
 
-        // 标签名不合法（例如：非小写字符）。
-        tagNameIllegal: 10,
-
-        // 过时的标签。
-        tagsDeprecated: 11
+        cssIllegal: 9,
+            cssByImport: 90
     },
     res: {
         img:[],
