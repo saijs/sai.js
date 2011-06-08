@@ -477,14 +477,14 @@ window.monitor.HTMLint = (function(){
             var elems = dom.getElementsByTagName("*");
             var duplicateIDs=[], duplicateIDsCache={};
             var inlinejs = "onclick,onblur,onchange,oncontextmenu,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onmousedown,onmousemove,onmouseout,onmouseover,onmouseup,onresize,onscroll,onload,onunload,onselect,onsubmit,onbeforecopy,oncopy,onbeforecut,oncut,onbeforepaste,onpaste,onbeforeprint,onpaint,onbeforeunload".split(",");
-            var reSpaceLeft = /^\s+/, reSpaceRight = /\s+$/;
+            //var reSpaceLeft = /^\s+/, reSpaceRight = /\s+$/;
             for(var i=0,tn,id,l=elems.length; i<l; i++){
                 if(elems[i].tagName=="!DOCTYPE"){continue;}
                 if(elems[i].tagName=="!--"){
-                    if(!reSpaceLeft.test(elems[i].innerHTML) || !reSpaceRight.test(elems[i].innerHTML)){
-                        var cmt = elems[i].innerHTML;
-                        log("html", elems[i].startLine, elems[i].startTag+(cmt.length < 20 ? cmt : cmt.substr(0, 20)+"...")+elems[i].endTag, "comment required space at start and end.", errorCodes.commentIllegal);
-                    }
+                    //if(!reSpaceLeft.test(elems[i].innerHTML) || !reSpaceRight.test(elems[i].innerHTML)){
+                        //var cmt = elems[i].innerHTML;
+                        //log("html", elems[i].startLine, elems[i].startTag+(cmt.length < 20 ? cmt : cmt.substr(0, 20)+"...")+elems[i].endTag, "comment required space at start and end.", errorCodes.commentIllegal);
+                    //}
                     continue;
                 }
                 // tagName.
