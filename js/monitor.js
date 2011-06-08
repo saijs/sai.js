@@ -11,7 +11,7 @@
 // namespace.
 window.monitor = {
     startTime: new Date(),
-    // XXX: 发布时需设置为 false。
+    // XXX: 发布时建议设置为 false。
     // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
     //
     // 非调试模式：
@@ -19,10 +19,10 @@ window.monitor = {
     // 2. 启用 HTMLint.
     // 3. 启用 CSSLint.
     debug: !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0) ||
-        "debug"==location.hash || true,
+        "#debug"==location.hash || false,
 
-    // XXX: 添加随机数避免缓存。
-    nocache: true,
+    // XXX: 添加随机数避免缓存，发布时建议设置为 false。
+    nocache: false,
 
     // XXX: 发布时需修改服务器地址。
     server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
@@ -30,6 +30,8 @@ window.monitor = {
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
     // 这个一般设置为 true 就好了。
     rethrow: true,
+    // DOMReady 并延迟毫秒数之后开始运行(HTML,CSS,JAVASCRIPT)规则验证。
+    delay: 1800,
     // userAgent.
     ua: navigator.userAgent,
     // page url, without search & hash.

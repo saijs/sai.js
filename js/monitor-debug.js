@@ -213,7 +213,7 @@ window.monitor.Monitor = (function(){
                     }
                 });
             }
-        }, 800);
+        }, window.monitor.delay);
     });
     /*
     // Debug.
