@@ -27,6 +27,9 @@ window.monitor = {
     // XXX: 发布时需修改服务器地址。
     server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
 
+    // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
+    domain: ".sit.alipay.net",
+
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
     // 这个一般设置为 true 就好了。
     rethrow: true,
@@ -212,7 +215,8 @@ window.monitor = {
         if(window.monitor.debug && window.console && window.console.log){
             window.console.log("SEND: ", data.length, data);
         }
-        if(window.monitor.debug && typeof(compress)!="undefined"){
+        if(location.hostname.indexOf(window.monitor.domain)<0){return;}
+        if(typeof(compress)!="undefined"){
             data = compress(data);
         }
         if(data){
