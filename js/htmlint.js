@@ -397,7 +397,7 @@ window.monitor.HTMLint = (function(){
                     currNode = currNode.parentNode;
                 }
             }else{
-                if(stack.last().tagName == tagName){
+                if(stack.last().tagName.toLowerCase() == tagName.toLowerCase()){
                     if(handler.end){
                         handler.end(stack.last().tagName);
                     }
@@ -796,6 +796,75 @@ window.monitor.HTMLint = (function(){
             htmlError: htmlErrors
         };
     };
+    //! linter v2.
+    function walk(node, enter, leave){
+        if(!node){return;}
+
+        var tagName =node.tagName.toLowerCase();
+        if(tagName in enter && "function"==typeof(enter[tagName])){
+            enter[tagName](node);
+        }
+
+        if(node.childNodes && node.childNodes.length){
+            for(var i=0,l=node.childNodes.length; i<l; i++){
+                walk(node.childNodes[i], enter, leave);
+            }
+        }
+
+        if(tagName in leave && "function"==typeof(leave[tagName])){
+            leave[tagName](node);
+        }
+    }
+
+    var doctypeCount = 0;
+    var rules_tags_enter = {
+        "!doctype": function(node, variable){
+            doctypeCount++;
+        },
+        "form": function(node, variable){
+            if(variable.formNestedCount>0){
+                log("html", node.startLine, node.startTag, "form nested illegal.", errorCodes.tagsNestedIllegal);
+            }
+            variable.formNestedCount++;
+
+            var fn;
+            if(node.hasAttribute("id")){
+                fn = "#"+node.getAttribute("id");
+            }else if(node.hasAttribute("name")){
+                fn = "form[name="+node.getAttribute("id")+"]";
+            }else{
+                fn = "document.forms["+variable.formCount+"]";
+            }
+            variable.formCount++;
+        },
+        "script": function(node, variable){
+            // validate [type] attribute.
+            //if(!node.hasAttribute("type")){
+                //log("html", node.startLine, node.startTag, "missing [type] attribute.", errorCodes.attrIllegal);
+            //}
+            if(!node.hasAttribute("src")){continue;}
+            var src = node.getAttribute("src");
+
+            if(!node.hasAttribute("charset")){
+                log("html", node.startLine, node.startTag, "missing charset.", errorCodes.charsetIllegal);
+            }
+            uri = URI.parse(src);
+            if(checkProtocol && "https:" != uri.protocol){
+                log("html", node.startLine, node.startTag, "protocol illegal.", errorCodes.protocolIllegal);
+            }
+            res.js.push(URI.path(src));
+        }
+    };
+    var rules_tags_leave = {
+        "!doctype": function(node, variable){}
+        "form": function(node, scope){
+            variable.formNestedCount++;
+        }
+    };
+    function lint(dom){
+        walk(dom, rules_tags_enter, rules_tags_leave);
+    }
+
 
     return HTMLint;
 
