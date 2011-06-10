@@ -49,7 +49,7 @@ window.monitor.HTMLint = (function(){
     function log(type, line, source, msg, code){
         source = window.monitor.S.trim(source);
         if(debug && window.console && window.console.log){window.console.log("HTMLint: line:"+line+", "+"code:"+code+", message:"+msg+", source:"+source+"");}
-        htmlErrors.push({ln:line, err:code, code:encodeURIComponent(source)});
+        htmlErrors.push({ln:line, err:code, code:source});
     }
 
     // HTML Node Object.
