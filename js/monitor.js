@@ -28,6 +28,8 @@ window.monitor = {
     server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
 
     // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
+    //          .alipay.com
+    //      .sit.alipay.net
     domain: ".sit.alipay.net",
 
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
@@ -216,14 +218,11 @@ window.monitor = {
             window.console.log("SEND: ", data.length, data);
         }
         if(location.hostname.indexOf(window.monitor.domain)<0){return;}
-        if(typeof(compress)!="undefined"){
-            data = compress(data);
-        }
-        if(data){
-            var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
-        }
+        data = encodeURIComponent(data);
+        var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
         var times=0; // re-try times, eg: 3.
-        var img = new Image();
+        // @see http://www.javascriptkit.com/jsref/image.shtml
+        var img = new Image(1,1);
         img.onload = function(){img = null;};
         img.onerror = function(evt){
             // for RE-TRY.
@@ -242,6 +241,7 @@ window.monitor = {
         var d = {
                 url: window.monitor.url,
                 ua: window.monitor.ua,
+                // 分批发送数据的批次标识。
                 id: window.monitor.identify(),
                 // 避免缓存。
                 rand: window.monitor.S.rand()
@@ -249,24 +249,29 @@ window.monitor = {
             JSON = window.monitor.JSON,
             send = window.monitor.send,
             server = window.monitor.server;
+
+        // TODO: 如果初始数据本身就超了，呃，算了。
+
         if("htmlError" in data){
-            var list = [], s="", len=window.monitor.url_len - JSON.toString(d).length - 10;
-            var arr = [];
-            for(var i=0,l=data.htmlError.length; i<l; i++){
-                if(JSON.toString(arr.concat(data.htmlError[i])).length < len){
-                    arr.push(data.htmlError[i]);
+            var list = [],
+                s = "",
+                len = window.monitor.url_len - JSON.toString(d).length - 10,
+                arr = [];
+            do{
+                if(encodeURIComponent(JSON.toString(arr.concat(data.htmlError[0]))).length < len){
+                    arr.push(data.htmlError.shift());
                 }else{
-                    d.htmlError = arr;
+                    if(arr.length > 0){
+                        d.htmlError = arr;
+                    }else{
+                        // overflow maxlength in single data.
+                        d.htmlError = data.htmlError.shift();
+                        d.htmlError.msg = d.htmlError.msg.substring(0,100);
+                    }
                     send(server, JSON.toString(d));
                     arr.length = 0;
-                    arr.push(data.htmlError[i]);
                 }
-            }
-            if(arr.length > 0){
-                d.htmlError = arr;
-                send(server, JSON.toString(d));
-                arr.length = 0;
-            }
+            }while(data.htmlError.length>0);
         }else{
             for(var k in data){
                 if(Object.prototype.hasOwnProperty.call(data, k)){
