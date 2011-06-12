@@ -785,10 +785,18 @@ window.monitor.HTMLint = (function(){
         }
     ];
     var HTMLint = function(html){
+        var t0 = new Date();
         var dom = HTMLParser(html, {});
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("HTMLParse time: "+(new Date()-t0)+"ms.");
+        }
 
+        var t1 = new Date();
         for(var i=0,l=rules.length; i<l; i++){
             rules[i].call(this, html, dom);
+        }
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("HTMLint time: "+(new Date()-t1)+"ms.");
         }
 
         return {
