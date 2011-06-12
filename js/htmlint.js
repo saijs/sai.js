@@ -424,13 +424,16 @@ window.monitor.HTMLint = (function(){
 	};
 
     var HTMLint = function(html){
+        var t0 = new Date();
         var dom = HTMLParser(html, {});
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("HTMLParse time: "+(new Date()-t0)+"ms.");
+        }
 
-        var t = new Date();
+        var t1 = new Date();
         lint(dom);
-        if(window.monitor.debug &&
-          window.console && window.console.log){
-            window.console.log("HTMLint time: "+(new Date()-t)+"ms.");
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("HTMLint time: "+(new Date()-t1)+"ms.");
         }
 
         return {
