@@ -99,7 +99,7 @@ window.monitor.HTMLint = (function(){
         tagName = tagName.toLowerCase();
         var a = [];
         for(var i=0,l=this.childNodes.length; i<l; i++){
-            if((this.childNodes[i].tagName && this.childNodes[i].tagName.toLowerCase() == tagName) ||
+            if((this.childNodes[i].tagName && this.childNodes[i].tagName == tagName) ||
               tagName == "*"){
                 a.push(this.childNodes[i]);
             }
@@ -442,6 +442,7 @@ window.monitor.HTMLint = (function(){
         };
     };
     //! linter v2.
+    // XXX: getElementsByTagName(*, callback) to walk.
     function walk(node, enter, leave){
         if(!node){return;}
 
@@ -471,6 +472,30 @@ window.monitor.HTMLint = (function(){
             }
         }
     }
+    Node.prototype.walk = function(enter, leave){
+        var tagName = this.tagName;
+        if(enter && tagName){
+            if(enter.hasOwnProperty("*") && "function"==typeof(enter["*"])){
+                enter["*"](this);
+            }
+            if(enter.hasOwnProperty(tagName) && "function"==typeof(enter[tagName])){
+                enter[tagName](this);
+            }
+        }
+
+        for(var i=0,l=this.childNodes.length; i<l; i++){
+            this.childNodes[i].walk(enter, leave);
+        }
+
+        if(leave && tagName){
+            if(leave.hasOwnProperty(tagName) && "function"==typeof(leave[tagName])){
+                leave[tagName](this);
+            }
+            if(leave.hasOwnProperty("*") && "function"==typeof(leave["*"])){
+                leave["*"](this);
+            }
+        }
+    };
 
     var Stack = function(){
         this._data = [];
@@ -1029,8 +1054,10 @@ window.monitor.HTMLint = (function(){
         }
     };
     function lint(dom){
-        walk(dom, preProcessing, {});
-        walk(dom, rules_tags_enter, rules_tags_leave);
+        //walk(dom, preProcessing, {});
+        //walk(dom, rules_tags_enter, rules_tags_leave);
+        dom.walk(preProcessing, {});
+        dom.walk(rules_tags_enter, rules_tags_leave)
         if(duplicateIDs.length > 0){
             log("html", 0, "duplicate id:"+duplicateIDs.join(","),
                 "duplicate id.", errorCodes.attrIllegal,
