@@ -223,7 +223,7 @@ window.monitor = {
             var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
         }
         var times=0; // re-try times, eg: 3.
-        var img = new Image();
+        var img = new Image(1,1);
         img.onload = function(){img = null;};
         img.onerror = function(evt){
             // for RE-TRY.

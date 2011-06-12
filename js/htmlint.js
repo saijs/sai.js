@@ -39,6 +39,7 @@ window.monitor.HTMLint = (function(){
         S           = window.monitor.S,
         debug       = window.monitor.debug,
         errorCodes  = window.monitor.htmlErrorCodes,
+        checkProtocol = window.monitor.checkProtocol,
         htmlErrors  = [],
         res         = {
             img: [],
@@ -425,7 +426,12 @@ window.monitor.HTMLint = (function(){
     var HTMLint = function(html){
         var dom = HTMLParser(html, {});
 
+        var t = new Date();
         lint(dom);
+        if(window.monitor.debug &&
+          window.console && window.console.log){
+            window.console.log("HTMLint time: "+(new Date()-t)+"ms.");
+        }
 
         return {
             res: res,
@@ -436,8 +442,9 @@ window.monitor.HTMLint = (function(){
     function walk(node, enter, leave){
         if(!node){return;}
 
-        var tagName =node.tagName;
-        if(tagName){
+        var tagName = node.tagName;
+        // root node is virtual node, without tagName...
+        if(enter && tagName){
             if("function"==typeof(enter["*"])){
                 enter["*"](node);
             }
@@ -452,7 +459,7 @@ window.monitor.HTMLint = (function(){
             }
         }
 
-        if(tagName){
+        if(leave && tagName){
             if(tagName in leave && "function"==typeof(leave[tagName])){
                 leave[tagName](node);
             }
@@ -504,14 +511,14 @@ window.monitor.HTMLint = (function(){
             iframes: new Stack(),
             frames: new Stack(),
             images: new Stack(),
-            ps: new Stack()
+            ps: new Stack(),
+            pres: new Stack()
         },
         re_empty_uri=/^javascript:(['"])\1;?$/,
         re_css_rel=/^stylesheet$/i,
         re_css=/\.css$/i,
         re_empty=/^\s*$/,
-        re_number=/^\d+$/,
-        checkProtocol = window.monitor.checkProtocol;
+        re_number=/^\d+$/;
     // validate <iframe>, <frame>.
     function validateFrames(node){
         var src = node.getAttribute("src"),
@@ -666,9 +673,11 @@ window.monitor.HTMLint = (function(){
                     errorCodes.inlineCSS);
             }
             // <p>
-            if(context.ps.length){
+            if(context.ps.length || context.pres.length){
                 switch(node.tagName){
                 case "a":
+                case "br":
+                case "code":
                 case "em":
                 case "span":
                 case "strong":
@@ -681,7 +690,7 @@ window.monitor.HTMLint = (function(){
                 }
             }
         },
-        "!doctype": function(node){
+        "!DOCTYPE": function(node){
             counter.doctypes++;
         },
         //"!--": function(node){
@@ -855,6 +864,7 @@ window.monitor.HTMLint = (function(){
         },
         "object": function(node){
             context.objects.push(node);
+            counter.objects++;
             if(node.getAttribute("codebase")){
                 uri = URI.parse(node.getAttribute("codebase"));
                 if(checkProtocol && "https:"!=uri.protocol){
@@ -916,6 +926,9 @@ window.monitor.HTMLint = (function(){
         },
         "p": function(node){
             context.ps.push(node);
+        },
+        "pre": function(node){
+            context.pres.push(node);
         },
         "ul": validateList,
         "ol": validateList,
@@ -995,8 +1008,8 @@ window.monitor.HTMLint = (function(){
         }
     };
     var rules_tags_leave = {
-        "!doctype": function(node){},
-        "form": function(node, scope){
+        "!DOCTYPE": function(node){},
+        "form": function(node){
             context.forms.pop();
             counter.submits = 0;
         },
@@ -1007,6 +1020,9 @@ window.monitor.HTMLint = (function(){
         },
         "p": function(node){
             context.ps.pop();
+        },
+        "pre": function(node){
+            context.pres.pop();
         }
     };
     function lint(dom){
