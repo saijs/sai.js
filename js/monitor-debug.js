@@ -64,7 +64,7 @@ window.monitor.Monitor = (function(){
             d = false;
             var isPost = /^post$/i.test(m);
             if(!isPost){
-                u = u+"?"+p;
+                u = u+(p ? ("?"+p) : "");
             }
             r.open(m, u, this.async); // 发送数据（异步）
             if(isPost){ // 提交方法为post时，发送信息头
