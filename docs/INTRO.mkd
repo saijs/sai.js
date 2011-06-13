@@ -182,6 +182,38 @@ firefox 3.0.3           :url最大长度7764个字符，超过最大长度后无
 Opera 9.52              :url最大长度7648个字符，超过最大长度后无法提交。
 Google Chrome 2.0.168   :url最大长度7713个字符，超过最大长度后无法提交。
 
+Baidu:
+IE6: 2152,2664,2152,2152,2089
+IE8: 2344,2536,2152,
+FF3: 3176,2472,2344,
+Ch11: 2536,3238
+
+ECMNG:
+IE: 4095, 无效指针
+FF,Chrome,Apache: 8209
+
+
+## 部署
+
+JSniffer
+
+DOMLint
+HTMLint
+
+==
+开发环境 DEV
+测试环境 SIT
+    JSniffer
+
+    DOMLint
+    HTMLint
+    CSSniffer
+    CSSLint
+发布环境 PUB
+    JSniffer
+
+    DOMLint
+    CSSniffer
 
 ## See Also
 
