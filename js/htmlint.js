@@ -30,6 +30,7 @@
  *          "html":function(elem, html, dom){},
  *          "form":function(elem, html, dom){}
  *      }
+ * TODO: isLower tagName? in parser.
  *
  */
 
@@ -38,6 +39,7 @@ window.monitor.HTMLint = (function(){
         S           = window.monitor.S,
         debug       = window.monitor.debug,
         errorCodes  = window.monitor.htmlErrorCodes,
+        checkProtocol = window.monitor.checkProtocol,
         htmlErrors  = [],
         res         = {
             img: [],
@@ -97,7 +99,7 @@ window.monitor.HTMLint = (function(){
         tagName = tagName.toLowerCase();
         var a = [];
         for(var i=0,l=this.childNodes.length; i<l; i++){
-            if((this.childNodes[i].tagName && this.childNodes[i].tagName.toLowerCase() == tagName) ||
+            if((this.childNodes[i].tagName && this.childNodes[i].tagName == tagName) ||
               tagName == "*"){
                 a.push(this.childNodes[i]);
             }
@@ -319,10 +321,14 @@ window.monitor.HTMLint = (function(){
          * @param unary, / if self close tags like <p />
          */
 		function parseStartTag( tag, tagName, rest, unary ) {
+            if(!window.monitor.S.isLower(tagName)){
+                log("html", line, tag, "tagName must be lowerCase.",
+                    errorCodes.tagsIllegal);
+            }
             var node = new Node();
             node.startTag = tag;
             node.startLine = line;
-            node.tagName = tagName;
+            node.tagName = tagName.toLowerCase();
             currNode.appendChild(node);
 
             //! Err...
@@ -397,7 +403,11 @@ window.monitor.HTMLint = (function(){
                     currNode = currNode.parentNode;
                 }
             }else{
-                if(stack.last().tagName == tagName){
+                if(!window.monitor.S.isLower(tagName)){
+                    log("html", line, tag, "tagName must be lowerCase.",
+                        errorCodes.tagsIllegal);
+                }
+                if(stack.last().tagName.toLowerCase() == tagName.toLowerCase()){
                     if(handler.end){
                         handler.end(stack.last().tagName);
                     }
@@ -412,378 +422,7 @@ window.monitor.HTMLint = (function(){
             }
 		}
 	};
-    var rules = [
-        // parse head.
-        function(html, dom){
-            //if(!reDoctype.test(html)){
-                //log("html", 0, "DOCTYPE 没有顶格", "DOCTYPE 没有顶格。", errorCodes.doctypeIllegal);
-            //}
-            var docLen = dom.getElementsByTagName("!DOCTYPE").length;
-            if(docLen == 0){
-                log("html", 0, "missing DOCTYPE.", "missing DOCTYPE.", errorCodes.doctypeIllegal);
-            }else if(docLen > 1){
-                log("html", docLen[1].startLine, "DOCTYPE too much.", "设置了超过 1 个 DOCTYPE。", errorCodes.doctypeIllegal);
-            }
 
-            var head = dom.getElementsByTagName("head");
-            if(1 == head.length){
-                if(head[0].childNodes.length == 0){
-                    log("html", head[0].startLine, "missing document charset.", "missing document charset.", errorCodes.charseIllegal);
-                }else{
-                    var elem = head[0].childNodes[0];
-                    if(elem.tagName && elem.tagName.toLowerCase()=="meta"){
-                        if(!elem.hasAttribute("charset") &&
-                          !(elem.hasAttribute("http-equiv") &&
-                            elem.getAttribute("http-equiv").toLowerCase()=="content-type" &&
-                            elem.hasAttribute("content") &&
-                            elem.getAttribute("content").indexOf("charset")>=0)){
-                                log("html", elem.startLine, "missing document charset", "missing document charset");
-                        }
-                    }
-                }
-                var title = head[0].getElementsByTagName("title");
-                if(1 == title.length){
-                    // TODO: check title not empty.
-                }else if(0 == title.length){
-                    log("html", head[0].startLine, "missing title", "missing title.", errorCodes.tagsIllegal);
-                }else{
-                    log("html", head[0].startLine, "too much titles", "too much titles.", errorCodes.tagsIllegal);
-                }
-            }else if(0 == head.length){
-                log("html", 0, "missing head", "missing head.", errorCodes.tagsIllegal);
-            }else{
-                log("html", head[1].line, "too much heads", "too much heads.", errorCodes.tagsIllegal);
-            }
-        },
-        // checkStyle@import, 检测页内样式中是否有使用 @import
-        function(html,dom){
-            var styles = dom.getElementsByTagName("style");
-            // @see http://www.yesky.com/imagesnew/software/css/css2/a_import.html
-            var re = /@import\s+[^;]+;/g;
-            for(var i=0,mat,tag,l=styles.length; i<l; i++){
-                // style 标签的嵌套。
-                //tag = styles[i].parentNode.tagName;
-                //if(tag && tag.toLowerCase() != "head"){
-                    //log("html", styles[i].startLine, tag+">style", "style must be in the head.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                //}
-                mat = styles[i].innerHTML.match(re);
-                if(mat){
-                    log("css", styles[i].startLine, mat.join(""), "using @import.", errorCodes.cssIllegal, errorCodes.cssByImport);
-                }
-            }
-        },
-        // check elements(inline js, inlile css, duplicate id, ...)
-        function(html, dom){
-            var elems = dom.getElementsByTagName("*");
-            var duplicateIDs=[], duplicateIDsCache={};
-            var inlinejs = "onclick,onblur,onchange,oncontextmenu,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onmousedown,onmousemove,onmouseout,onmouseover,onmouseup,onresize,onscroll,onload,onunload,onselect,onsubmit,onbeforecopy,oncopy,onbeforecut,oncut,onbeforepaste,onpaste,onbeforeprint,onpaint,onbeforeunload".split(",");
-            //var reSpaceLeft = /^\s+/, reSpaceRight = /\s+$/;
-            for(var i=0,tn,id,l=elems.length; i<l; i++){
-                if(elems[i].tagName=="!DOCTYPE"){continue;}
-                if(elems[i].tagName=="!--"){
-                    //if(!reSpaceLeft.test(elems[i].innerHTML) || !reSpaceRight.test(elems[i].innerHTML)){
-                        //var cmt = elems[i].innerHTML;
-                        //log("html", elems[i].startLine, elems[i].startTag+(cmt.length < 20 ? cmt : cmt.substr(0, 20)+"...")+elems[i].endTag, "comment required space at start and end.", errorCodes.commentIllegal);
-                    //}
-                    continue;
-                }
-                // tagName.
-                if(!window.monitor.S.isLower(elems[i].tagName)){
-                    log("html", elems[i].startLine, elems[i].startTag, "tagName must bu lowerCase.", errorCodes.tagsIllegal);
-                }
-                tn = elems[i].tagName.toLowerCase();
-                if("font"==tn || "s"==tn || "u"==tn){
-                    log("html", elems[i].startLine, elems[i].startTag, "tagName deprecated.", errorCodes.tagsIllegal, errorCodes.tagsDeprecated);
-                }
-                // duplicate id.
-                if(elems[i].hasAttribute("id")){
-                    id = elems[i].getAttribute("id");
-                    if(duplicateIDsCache.hasOwnProperty("ID_"+id)){
-                        duplicateIDs.push(id);
-                    }
-                    duplicateIDsCache["ID_"+id] = true;
-                }
-                for(var j=0,m=inlinejs.length; j<m; j++){
-                    if(elems[i].hasAttribute(inlinejs[j])){
-                        log("html", elems[i].startLine, elems[i].startTag, "inline js.", errorCodes.inlineJS);
-                        break;
-                    }
-                }
-                if(elems[i].hasAttribute("style")){
-                    log("html", elems[i].startLine, elems[i].startTag, "inline css.", errorCodes.inlineCSS);
-                }
-            }
-            if(duplicateIDs.length > 0){
-                log("html", 0, "duplicate id:"+duplicateIDs.join(","), "duplicate id.", errorCodes.attrIllegal, errorCodes.idDuplicated);
-            }
-
-            // We can't check tag p in p on the DOM.
-            var ps = dom.getElementsByTagName("p");
-            for(var i=0,p,pc,l=ps.length; i<l; i++){
-                p = ps[i];
-                pc = ps[i].getElementsByTagName("*");
-                for(var j=0,m=pc.length; j<m; j++){
-                    switch(pc[j].tagName.toLowerCase()){
-                        case "a":
-                        case "em":
-                        case "span":
-                        case "strong":
-                            break;
-                        default:
-                            log("html", pc[j].startLine, "p>"+pc[j].startTag, "tags in p just a,em,span,strong.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                    }
-                }
-            }
-            // document.getElementsByTagName("p")[i].getElementsByTagName("p").length;
-            // ul>li, ol>li
-            // TODO: 正向匹配。
-            var li = dom.getElementsByTagName("li");
-            for(var i=0,tag,l=li.length; i<l; i++){
-                tag = li[i].parentNode.tagName.toLowerCase();
-                if("ul"!=tag && "ol"!=tag){
-                    log("html", li[i].startLine, tag+">"+li[i].startTag, "ul,ol 中嵌套 li", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                }
-            }
-            // dl>dt
-            // TODO: 正向匹配。
-            var dt = document.getElementsByTagName("dt");
-            for(var i=0,tag,l=dt.length; i<l; i++){
-                tag = dt[i].parentNode.tagName.toLowerCase();
-                if("dl" != tag){
-                    log("html", dt[i].startLine, tag+">"+dt[i].startTag, "dl 中嵌套 dt", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                }
-            }
-            // dl>dd
-            // TODO: 正向匹配。
-            var dd = document.getElementsByTagName("dd");
-            for(var i=0,tag,l=dd.length; i<l; i++){
-                tag = dd[i].parentNode.tagName.toLowerCase();
-                if("dl" != tag){
-                    log("html", dd[i].startLine, tag+">"+dd[i].startTag, "dl 中嵌套 dd", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                }
-            }
-            // tr>td
-            // TODO: 正向匹配。
-            var td = document.getElementsByTagName("td");
-            for(var i=0,tag,l=td.length; i<l; i++){
-                tag = td[i].parentNode.tagName.toLowerCase();
-                if("tr" != tag){
-                    log("html", td[i].startLine, tag+">"+td[i].startTag, "tr 中嵌套 td", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                }
-            }
-        },
-        // checkResources, 检测文档中的资源引用情况
-        function(html, dom){
-            var re=/https:\/\//i,
-                re_css_rel=/^stylesheet$/i,
-                re_css=/\.css$/i,
-                re_empty=/^\s*$/,
-                re_number=/^\d+$/;
-            var checkProtocol = "https:" == location.protocol;
-            var script  = dom.getElementsByTagName("script"),
-                link    = dom.getElementsByTagName("link"),
-                img     = dom.getElementsByTagName("img"),
-                iframe  = dom.getElementsByTagName("iframe"),
-                frame   = dom.getElementsByTagName("frame"),
-                object  = dom.getElementsByTagName("object"),
-                embed   = dom.getElementsByTagName("embed");
-            for(var i=0,uri,tag,l=script.length; i<l; i++){
-                //tag = script[i].parentNode.tagName.toLowerCase();
-                //if("body" != tag){
-                    //log("html", script[i].startLine, tag+">"+script[i].startTag, "script 建议放在 body 中。", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                //}
-                if(!script[i].hasAttribute("src")){continue;}
-                if(!script[i].hasAttribute("charset")){
-                    log("html", script[i].startLine, script[i].startTag, "missing charset.", errorCodes.charsetIllegal);
-                }
-                uri = URI.parse(script[i].getAttribute("src"));
-                if(checkProtocol && "https:" != uri.protocol){
-                    log("html", script[i].startLine, script[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
-                }
-                res.js.push(URI.path(script[i].getAttribute("src")));
-            }
-            for(var i=0,tag,l=link.length; i<l; i++){
-                type = link[i].getAttribute("type");
-                rel = link[i].getAttribute("rel");
-                uri = URI.parse(link[i].getAttribute("href"));
-                // link 标签的嵌套。
-                //tag = link[i].parentNode.tagName.toLowerCase();
-                //if("head" != tag){
-                    //log("html", link[i].startLine, tag+">"+link[i].startTag, "tags nested error.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                //}
-                // All links need rel attr.
-                if(!link[i].hasAttribute("rel")){
-                    log("html", link[i].startLine, link[i].startTag, "missing [rel]", errorCodes.attrIllegal);
-                    continue;
-                }
-                // favicon, stylesheet, ...
-                if(checkProtocol && "https:" != uri.protocol){
-                    log("html", link[i].startLine, link[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
-                }
-                // link[rel=stylesheet]
-                if("stylesheet" != link[i].getAttribute("rel")){continue;}
-                //if("text/css" != type){
-                    //log("html", link[i].startLine, link[i].startTag, "link[rel=stylesheet] missing [type].", errorCodes.attrIllegal);
-                //}
-                if(!link[i].hasAttribute("charset")){
-                    log("html", link[i].startLine, link[i].startTag, "missing charset.", errorCodes.charsetIllegal);
-                }
-                res.css.push(URI.path(link[i].getAttribute("href")));
-            }
-            for(var i=0,l=img.length; i<l; i++){
-                var attrs = [];
-                uri=URI.parse(img[i].getAttribute("src"));
-                if(checkProtocol && "https:" != uri.protocol){
-                    log("html", img[i].startLine, img[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
-                }
-                if(!img[i].hasAttribute("alt") || re_empty.test(img[i].getAttribute("alt"))){
-                    attrs.push("alt");
-                }
-                //if(!img[i].hasAttribute("width") || !re_number.test(img[i].getAttribute("width"))){
-                    //attrs.push("width");
-                //}
-                //if(!img[i].hasAttribute("height") || !re_number.test(img[i].getAttribute("height"))){
-                    //attrs.push("height");
-                //}
-                if(attrs.length>0){
-                    log("html", img[i].startLine, img[i].startTag, "missing "+attrs.join(), errorCodes.attrIllegal);
-                }
-                res.img.push(URI.path(img[i].getAttribute("src")));
-            }
-            var frames = iframe.concat(frame), re_empty_uri=/^javascript:(['"])\1;?$/;
-            for(var i=0,uri,src,l=frames.length; i<l; i++){
-                src = frames[i].getAttribute("src");
-                uri=URI.parse(src);
-                if(checkProtocol && ("https:" != uri.protocol || re_empty_uri.test(src))){
-                    log("html", frames[i].startLine, frames[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
-                }
-            }
-            for(var i=0,l=object.length; i<l; i++){
-                if(object[i].getAttribute("codebase")){
-                    uri = URI.parse(object[i].getAttribute("codebase"));
-                    if(checkProtocol && "https:"!=uri.protocol){
-                        log("html", object[i].startLine, '<object codebase="'+object[i].getAttribute("codebase")+'"', "protocol illegal.", errorCodes.protocolIllegal);
-                    }
-                }
-                var params=object[i].getElementsByTagName("param");
-                for(var j=0,m=params.length; j<m; j++){
-                    if("movie"==params[j].getAttribute("name") ||
-                      "src"==params[j].getAttribute("src")){
-                        uri=URI.parse(params[j].getAttribute("value"));
-                        if(checkProtocol && "https:" != uri.protocol){
-                            log("html", params[i].startLine, params[j].startTag, "protocol illegal.", errorCodes.protocolIllegal);
-                        }
-                        res.fla.push(URI.path(params[j].getAttribute("value")));
-                        break;
-                    }
-                }
-            }
-            for(var i=0,l=embed.length; i<l; i++){
-                if(!embed[i].hasAttribute("src")){continue;}
-                uri=URI.parse(embed[i].getAttribute("src"));
-                if(checkProtocol && "https:"!=uri.protocol){
-                    log("html", embed[i].startLine, embed[i].startTag, "protocol illegal.", errorCodes.protocolIllegal);
-                }
-                res.fla.push(URI.path(embed[i].getAttribute("src")));
-            }
-        },
-        // checkForms, 检测文档中的表单元素是否符合规范
-        function(html,dom){
-            var fs = dom.getElementsByTagName("form");
-            var fs_elems_ids = {};
-            for(var i=0,fn,l=fs.length; i<l; i++){
-                if(fs[i].hasAttribute("id")){
-                    fn = "#"+fs[i].getAttribute("id");
-                }else if(fs[i].hasAttribute("name")){
-                    fn = "form[name="+fs[i].getAttribute("id")+"]";
-                }else{
-                    fn = "document.forms["+i+"]";
-                }
-                var elems = fs[i].getElementsByTagName("*");
-                for(var j=0,id,type,name,submitCount=0,html,m=elems.length; j<m; j++){
-                    switch(elems[j].tagName.toLowerCase()){
-                    case "input":
-                    case "button":
-                        if(elems[j].hasAttribute("type")){
-                            type = elems[j].getAttribute("type").toLowerCase();
-                            // XXX: 表单不允许有多个 submit?
-                            //if(type=="submit" && (++submitCount > 1)){
-                                //log("html", elems[j].startLine, elems[j].startTag, "too much more submit buttons.", errorCodes.tagsIllegal);
-                            //}
-                        }else{
-                            log("html", elems[j].startLine, elems[j].startTag, "missing attribute: [type].", errorCodes.attrIllegal);
-                        }
-                        //!break;
-                    case "select":
-                    case "textarea":
-                        html = fn+": "+elems[j].startTag;
-                        // cache elements ids for label test.
-                        if(elems[j].hasAttribute("id")){
-                            id = elems[j].getAttribute("id");
-                            if("id"==id || "submit"==id){
-                                log("html", elems[j].startLine, html, "id不合法。", errorCodes.formElementNameIllegal);
-                            }
-                            fs_elems_ids["ID_"+id] = true;
-                        }
-                        if(!elems[j].hasAttribute("name")){
-                            log("html", elems[j].startLine, html, "missing attribute: [name].", errorCodes.attrIllegal);
-                        }
-                        name = elems[j].getAttribute("name");
-                        if("submit"==name || "id"==name){
-                            log("html", elems[j].startLine, html, "[name] attribute illegal.", errorCodes.attrIllegal);
-                        }
-                        break;
-                    case "form":
-                        log("html", elems[j].startLine, "form "+elems[j].startTag, "form nested illegal.", errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
-                        break;
-                    //case "fieldset":
-                    default:
-                        continue;
-                    }
-                }
-            }
-            // 检测文档中的label标签是否有添加for属性
-            var labs = dom.getElementsByTagName("label");
-            for(var i=0,id,html,l=labs.length; i<l; i++){
-                html = labs[i].startTag;
-                if(!labs[i].hasAttribute("for")){
-                    log("html", labs[i].startLine, html, "missing attribute: [for]", errorCodes.attrIllegal);
-                    continue;
-                }
-                id = labs[i].getAttribute("for");
-                if(!id){
-                    log("html", labs[i].startLine, html, "attribute [for] missing a value.", errorCodes.attrIllegal);
-                    continue;
-                }
-                if(!fs_elems_ids["ID_"+id]){
-                    log("html", labs[i].startLine, html, "#"+id+" not exist.", errorCodes.attrIllegal);
-                    continue;
-                }
-            }
-        },
-        // checkLinksUsage, 检测页面链接可用性，硬编码等
-        function(html, dom){
-            var links = dom.getElementsByTagName("a");
-            // XXX: 统一状态判断。
-            var debug = !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0);
-            for(var i=0,href,uri,l=links.length; i<l; i++){
-                if(!links[i].hasAttribute("href")){
-                    log("html", links[i].startLine, links[i].startTag, "missing [href]", errorCodes.attrIllegal);
-                    continue;
-                }
-                href = links[i].getAttribute("href");
-                if(href.indexOf("#")==0){continue;}
-                if(/javascript:void(0);?/.test(href)){continue;}
-                uri = URI.parse(links[i].getAttribute("href"));
-                if((!debug && uri.hostname.indexOf(".alipay.net")>0) ||
-                    uri.hostname.indexOf("localhost")==0 ||
-                    0==href.indexOf("$")){ // href="$xxServer.getURI('...')"
-                    log("html", links[i].startLine, links[i].startTag, "a[href] illegal.", errorCodes.attrIllegal);
-                }
-                // XXX: 站内地址检测是否有效(404)，仅限于SIT环境。
-            }
-        }
-    ];
     var HTMLint = function(html){
         var t0 = new Date();
         var dom = HTMLParser(html, {});
@@ -792,9 +431,7 @@ window.monitor.HTMLint = (function(){
         }
 
         var t1 = new Date();
-        for(var i=0,l=rules.length; i<l; i++){
-            rules[i].call(this, html, dom);
-        }
+        lint(dom);
         if(window.monitor.debug && window.console && window.console.log){
             window.console.log("HTMLint time: "+(new Date()-t1)+"ms.");
         }
@@ -804,6 +441,634 @@ window.monitor.HTMLint = (function(){
             htmlError: htmlErrors
         };
     };
+    //! linter v2.
+    function walk(node, enter, leave){
+        if(!node){return;}
+
+        var tagName = node.tagName;
+        // root node is virtual node, without tagName...
+        if(enter && tagName){
+            if("function"==typeof(enter["*"])){
+                enter["*"](node);
+            }
+            if(tagName in enter && "function"==typeof(enter[tagName])){
+                enter[tagName](node);
+            }
+        }
+
+        if(node.childNodes && node.childNodes.length){
+            for(var i=0,l=node.childNodes.length; i<l; i++){
+                walk(node.childNodes[i], enter, leave);
+            }
+        }
+
+        if(leave && tagName){
+            if(tagName in leave && "function"==typeof(leave[tagName])){
+                leave[tagName](node);
+            }
+            if("function"==typeof(leave["*"])){
+                leave["*"](node);
+            }
+        }
+    }
+    Node.prototype.walk = function(enter, leave){
+        var tagName = this.tagName;
+        if(enter && tagName){
+            if(enter.hasOwnProperty("*") && "function"==typeof(enter["*"])){
+                enter["*"](this);
+            }
+            if(enter.hasOwnProperty(tagName) && "function"==typeof(enter[tagName])){
+                enter[tagName](this);
+            }
+        }
+
+        for(var i=0,l=this.childNodes.length; i<l; i++){
+            this.childNodes[i].walk(enter, leave);
+        }
+
+        if(leave && tagName){
+            if(leave.hasOwnProperty(tagName) && "function"==typeof(leave[tagName])){
+                leave[tagName](this);
+            }
+            if(leave.hasOwnProperty("*") && "function"==typeof(leave["*"])){
+                leave["*"](this);
+            }
+        }
+    };
+
+    var Stack = function(){
+        this._data = [];
+    };
+    Stack.prototype = {
+        push: function(obj){
+            return this._data.push(obj);
+        },
+        pop: function(){
+            return this._data.pop();
+        },
+        last: function(){
+            return this._data[this._data.length-1];
+        },
+        empty: function(){
+            return this._data.length == 0;
+        },
+        clear: function(){
+            this._data.length = 0;
+        }
+    };
+
+    var counter = {
+            doctypes: 0,
+            heads: 0,
+            metas: 0,
+            titles: 0,
+            forms: 0,
+            scripts: 0,
+            cssLinks: 0,
+            styles: 0,
+            objects: 0,
+            params: 0,
+            embeds: 0,
+            submits: 0,
+            nodes: 0
+        },
+        context = {
+            heads: new Stack(),
+            forms: new Stack(),
+            objects: new Stack(),
+            iframes: new Stack(),
+            frames: new Stack(),
+            images: new Stack(),
+            ps: new Stack(),
+            pres: new Stack()
+        },
+        re_empty_uri=/^javascript:(['"])\1;?$/,
+        re_css_rel=/^stylesheet$/i,
+        re_css=/\.css$/i,
+        re_empty=/^\s*$/,
+        re_number=/^\d+$/;
+    // validate <iframe>, <frame>.
+    function validateFrames(node){
+        var src = node.getAttribute("src"),
+            uri = URI.parse(src);
+        if(checkProtocol && ("https:" != uri.protocol ||
+          re_empty_uri.test(src))){
+            log("html", node.startLine, node.startTag, "protocol illegal.",
+                errorCodes.protocolIllegal);
+        }
+    }
+    // validate <input>, <button>, <select>, <textarea>.
+    function validateFormElements(node){
+        // TODO: donot validate button's name missed.
+        if("noform"==getFormName()){
+            console.log("noform: "+node.startTag)
+        }
+        var html = getFormName() + " " + node.startTag;
+        if(node.hasAttribute("id")){
+            id = node.getAttribute("id");
+            if("id"==id || "submit"==id){
+                log("html", node.startLine, html, "id不合法。",
+                    errorCodes.formElementNameIllegal);
+            }
+        }
+        if(!node.hasAttribute("name")){
+            var type;
+            if(node.hasAttribute("type")){
+                type = node.getAttribute("type");
+            }else if("button" == node.tagName){
+                type = "button";
+            }
+            if("button"==type || "submit"==type || "image"==type){
+                log("html", node.startLine, html,
+                    "missing attribute: [name].", errorCodes.attrIllegal);
+            }
+            return;
+        }
+        var name = node.getAttribute("name");
+        if("submit"==name || "id"==name){
+            log("html", node.startLine, html,
+                "[name] attribute illegal.", errorCodes.attrIllegal);
+        }
+    }
+    function getFormName(){
+        var fm = context.forms.last(),
+            fn = "document.forms["+counter.forms+"]";
+        if(!fm){
+            fn = "noform";
+        }else if(fm.hasAttribute("id")){
+            fn = "form#"+fm.getAttribute("id");
+        }else if(fm.hasAttribute("name")){
+            fn = "form[name="+fm.getAttribute("id")+"]";
+        }
+        return fn;
+    }
+    // validate <input>, <button>.
+    function validateButtons(node){
+        var html = getFormName()+": "+node.startTag;
+
+        if(node.hasAttribute("type")){
+            // XXX: 表单不允许有多个 submit?
+            //type = node.getAttribute("type").toLowerCase();
+            //if(type=="submit" && (++counter.submits > 1)){
+                //log("html", html, node.startTag,
+                    //"too much more submit buttons.",
+                    //errorCodes.tagsIllegal);
+            //}
+        }else{
+            log("html", html, node.startTag,
+                "missing attribute: [type].", errorCodes.attrIllegal);
+        }
+        validateFormElements(node);
+    }
+    // validate <ol>, <ul>.
+    function validateList(node){
+        for(var i=0,l=node.childNodes.length; i<l; i++){
+            if("li" != node.childNodes[i].tagName){
+                log("html", node.startLine,
+                    node.tagName+">"+node.childNodes[i].startTag,
+                    "ul,ol 中嵌套 li", errorCodes.tagsIllegal,
+                    errorCodes.tagsNestedIllegal);
+            }
+        }
+    }
+    // validate <dt>, <dd>.
+    function validateDefinedItem(node){
+        if("dl" != node.parentNode.tagName){
+            log("html", node.startLine,
+                node.parentNode.tagName+">"+node.startTag,
+                "dl 中嵌套 dt", errorCodes.tagsIllegal,
+                errorCodes.tagsNestedIllegal);
+        }
+    }
+    // validate <thead>, <tbody>, <tfoot>, <caption>, <colgroup>, <col>.
+    function validateTables(node){
+        var tag = node.parentNode.tagName;
+        if("table"!=tag){
+            log("html", node.startLine, node.startTag,
+                tag+">"+node.tagName, errorCodes.tagsNestedIllegal);
+        }
+        // TODO: validate childNodes for thead, tbody, tfoot.
+    }
+    // vali  <th>, <td>.
+    function validateTableCell(node){
+        var tag = node.parentNode.tagName;
+        if("tr" != tag){
+            log("html", node.startLine, tag+">"+node.startTag,
+                tag+">"+node.tagName, errorCodes.tagsIllegal,
+                errorCodes.tagsNestedIllegal);
+        }
+    }
+
+    var duplicateIDs=[], duplicateIDsCache={};
+    var inlinejs = ("onclick,onblur,onchange,oncontextmenu,ondblclick,onfocus,"+
+        "onkeydown,onkeypress,onkeyup,onmousedown,onmousemove,onmouseout,"+
+        "onmouseover,onmouseup,onresize,onscroll,onload,onunload,onselect,"+
+        "onsubmit,onbeforecopy,oncopy,onbeforecut,oncut,onbeforepaste,onpaste,"+
+        "onbeforeprint,onpaint,onbeforeunload").split(",");
+    var preProcessing = {
+        "*": function(node){
+            counter.nodes++;
+            // cache elements ids for label test.
+            if(node.hasAttribute("id")){
+                id = window.monitor.S.trim(node.getAttribute("id"));
+                if(""==id){
+                    log("html", node.startLine, node.startTag,
+                        node.tagName+"[id="+id+"]", errorCodes.attrIllegal);
+                    return;
+                }
+                if(duplicateIDsCache.hasOwnProperty("ID_"+id)){
+                    if(1 == duplicateIDsCache["ID_"+id]){
+                        duplicateIDs.push(id);
+                    }
+                    duplicateIDsCache["ID_"+id]++;
+                }else{
+                    duplicateIDsCache["ID_"+id] = 1;
+                }
+            }
+        }
+    };
+    var rules_tags_enter = {
+        "*": function(node){
+            // XXX: 性能？
+            for(var j=0,m=inlinejs.length; j<m; j++){
+                if(node.hasAttribute(inlinejs[j])){
+                    log("html", node.startLine,
+                        node.startTag, "inline js.", errorCodes.inlineJS);
+                    break;
+                }
+            }
+            if(node.hasAttribute("style")){
+                log("html", node.startLine, node.startTag, "inline css.",
+                    errorCodes.inlineCSS);
+            }
+            // <p>
+            if(context.ps.length || context.pres.length){
+                switch(node.tagName){
+                case "a":
+                case "br":
+                case "code":
+                case "em":
+                case "span":
+                case "strong":
+                    break;
+                default:
+                    log("html", node.startLine, "p>"+node.startTag,
+                        "tags in p just a,em,span,strong.",
+                        errorCodes.tagsIllegal,
+                        errorCodes.tagsNestedIllegal);
+                }
+            }
+        },
+        "!DOCTYPE": function(node){
+            counter.doctypes++;
+        },
+        //"!--": function(node){
+            //var reSpaceLeft = /^\s+/, reSpaceRight = /\s+$/;
+            //if(!reSpaceLeft.test(elems[i].innerHTML) ||
+                // !reSpaceRight.test(elems[i].innerHTML)){
+                //var cmt = elems[i].innerHTML;
+                //log("html", elems[i].startLine,
+                    //elems[i].startTag+(cmt.length<20?cmt:cmt.substr(0,20)+"...")+
+                    //elems[i].endTag, "comment required space at start and end.",
+                    //errorCodes.commentIllegal);
+            //}
+        //},
+        "head": function(){
+            counter.heads++;
+            context.heads.push(node);
+            // check the document.charset
+            var charsetIllegal = true,
+                meta = node.childNodes[0];
+            if(node.childNodes.length > 0 &&
+              "meta"!=node.childNodes[0].tagName &&
+              (meta.hasAttribute("charset") ||
+                (meta.hasAttribute("http-equiv") &&
+                meta.getAttribute("http-equiv").toLowerCase()=="content-type" &&
+                meta.hasAttribute("content") &&
+                meta.getAttribute("content").indexOf("charset")>=0)
+              )
+            ){
+                log("html", meta.startLine, "document charset illegal.",
+                    "missing document charset");
+            }
+        },
+        "title": function(node){
+            counter.titles++;
+            // TODO: check title not empty.
+            //if(re_empty.test(node.innerHTML)){}
+        },
+        "meta": function(node){
+            counter.metas++;
+        },
+        "form": function(node){
+            if(!context.forms.empty()){
+                log("html", node.startLine, "form "+node.startTag,
+                    "form nested illegal.", errorCodes.tagsIllegal,
+                    errorCodes.tagsNestedIllegal);
+            }
+            context.forms.push(node);
+            counter.forms++;
+        },
+        "input":  validateButtons,
+        "button": validateButtons,
+        "select":   validateFormElements,
+        "textarea": validateFormElements,
+        "label": function(node){
+            var html = node.startTag;
+            if(!node.hasAttribute("for")){
+                log("html", node.startLine, html,
+                    "missing attribute: [for]", errorCodes.attrIllegal);
+                return;
+            }
+            var id = node.getAttribute("for");
+            if(re_empty.test(id)){
+                log("html", node.startLine, html,
+                    "attribute [for] missing a value.", errorCodes.attrIllegal);
+                return;
+            }
+            if(!duplicateIDsCache.hasOwnProperty("ID_"+id)){
+                log("html", node.startLine, html,
+                    "#"+id+" element not exist.", errorCodes.attrIllegal);
+                return;
+            }
+        },
+        "script": function(node){
+            // validate [type] attribute.
+            //if(!node.hasAttribute("type")){
+                //log("html", node.startLine, node.startTag,
+                    //"missing [type] attribute.", errorCodes.attrIllegal);
+            //}
+            if(!node.hasAttribute("src")){return;}
+            var src = node.getAttribute("src");
+
+            if(!node.hasAttribute("charset")){
+                log("html", node.startLine, node.startTag, "missing charset.",
+                    errorCodes.charsetIllegal);
+            }
+            uri = URI.parse(src);
+            if(checkProtocol && "https:" != uri.protocol){
+                log("html", node.startLine, node.startTag, "protocol illegal.",
+                    errorCodes.protocolIllegal);
+            }
+            res.js.push(URI.path(src));
+        },
+        "link": function(node){
+            type = node.getAttribute("type");
+            rel = node.getAttribute("rel");
+            uri = URI.parse(node.getAttribute("href"));
+            // link 标签的嵌套。
+            //tag = node.parentNode.tagName.toLowerCase();
+            //if("head" != tag){
+                //log("html", node.startLine, tag+">"+node.startTag,
+                    //"tags nested error.", errorCodes.tagsIllegal,
+                    //errorCodes.tagsNestedIllegal);
+            //}
+            // All links need rel attr.
+            if(!node.hasAttribute("rel")){
+                log("html", node.startLine, node.startTag, "missing [rel]",
+                    errorCodes.attrIllegal);
+                return;
+            }
+            // favicon, stylesheet, ...
+            if(checkProtocol && "https:" != uri.protocol){
+                log("html", node.startLine, node.startTag, "protocol illegal.",
+                    errorCodes.protocolIllegal);
+            }
+            // link[rel=stylesheet]
+            if("stylesheet" != node.getAttribute("rel")){return;}
+            //if("text/css" != type){
+                //log("html", node.startLine, node.startTag,
+                    //"link[rel=stylesheet] missing [type].",
+                    //errorCodes.attrIllegal);
+            //}
+            if(!node.hasAttribute("charset")){
+                log("html", node.startLine, node.startTag, "missing charset.",
+                    errorCodes.charsetIllegal);
+            }
+            res.css.push(URI.path(node.getAttribute("href")));
+        },
+        "style": function(node){
+            // @see http://www.yesky.com/imagesnew/software/css/css2/a_import.html
+            var re = /@import\s+[^;]+;/g,
+                mat = node.innerHTML.match(re);
+                // style 标签的嵌套。
+                //tag = node.parentNode.tagName;
+                //tag = node.parentNode.tagName;
+                //if(tag && tag.toLowerCase() != "head"){
+                    //log("html", node.startLine, tag+">style",
+                        //"style must be in the head.", errorCodes.tagsIllegal,
+                        //errorCodes.tagsNestedIllegal);
+                //}
+                if(mat){
+                    log("css", node.startLine, mat.join(""), "using @import.",
+                        errorCodes.cssIllegal, errorCodes.cssByImport);
+                }
+        },
+        "iframe": validateFrames,
+        "frame": validateFrames,
+        "img": function(node){
+            var attrs = [],
+                uri = URI.parse(node.getAttribute("src"));
+            if(checkProtocol && "https:" != uri.protocol){
+                log("html", node.startLine, node.startTag, "protocol illegal.",
+                    errorCodes.protocolIllegal);
+            }
+            if(!node.hasAttribute("alt") ||
+              re_empty.test(node.getAttribute("alt"))){
+                attrs.push("alt");
+            }
+            //if(!node.hasAttribute("width") ||
+              // !re_number.test(node.getAttribute("width"))){
+                //attrs.push("width");
+            //}
+            //if(!node.hasAttribute("height") ||
+              // !re_number.test(node.getAttribute("height"))){
+                //attrs.push("height");
+            //}
+            if(attrs.length>0){
+                log("html", node.startLine, node.startTag,
+                    "missing "+attrs.join(), errorCodes.attrIllegal);
+            }
+            res.img.push(URI.path(node.getAttribute("src")));
+        },
+        "object": function(node){
+            context.objects.push(node);
+            counter.objects++;
+            if(node.getAttribute("codebase")){
+                uri = URI.parse(node.getAttribute("codebase"));
+                if(checkProtocol && "https:"!=uri.protocol){
+                    log("html", node.startLine,
+                        '<object codebase="'+node.getAttribute("codebase")+'"',
+                        "protocol illegal.", errorCodes.protocolIllegal);
+                }
+            }
+        },
+        "param": function(node){
+            //if("wmode"==node.getAttribute("name")){
+                //var wmode = node.getAttribute("name").toLowerCase();
+                //if("transparent"!=wmode || "opaque"!=wmode){
+                //log("html", node.startLine, node.startTag,
+                    //"WARNING: param[name=wmode][value="+wmode+"].",
+                    //errorCodes.attrIllegal);
+                //}
+            //}
+            if("movie"==node.getAttribute("name") ||
+              "src"==node.getAttribute("src")){
+                var uri = URI.parse(node.getAttribute("value"));
+                if(checkProtocol && "https:" != uri.protocol){
+                    log("html", node.startLine, node.startTag,
+                        "protocol illegal.", errorCodes.protocolIllegal);
+                }
+                res.fla.push(URI.path(node.getAttribute("value")));
+            }
+        },
+        "embed": function(node){
+            //if(node.hasAttribute("wmode")){
+                //var wmode = node.getAttribute("wmode").toLowerCase();
+                //if("transparent"!=wmode || "opaque"!=wmode){
+                //log("html", node.startLine, node.startTag,
+                    //"WARNING: embed[wmode="+wmode+"].", errorCodes.attrIllegal);
+                //}
+            //}else{
+                //log("html", node.startLine, node.startTag,
+                    //"missing embed[wmode].", errorCodes.attrIllegal);
+            //}
+            if(!node.hasAttribute("src")){return;}
+            var uri=URI.parse(node.getAttribute("src"));
+            if(checkProtocol && "https:"!=uri.protocol){
+                log("html", node.startLine, node.startTag, "protocol illegal.",
+                    errorCodes.protocolIllegal);
+            }
+            res.fla.push(URI.path(node.getAttribute("src")));
+        },
+        "font": function(node){
+            log("html", node.startLine, node.startTag, "tagName deprecated.",
+                errorCodes.tagsIllegal, errorCodes.tagsDeprecated);
+        },
+        "s": function(node){
+            log("html", node.startLine, node.startTag, "tagName deprecated.",
+                errorCodes.tagsIllegal, errorCodes.tagsDeprecated);
+        },
+        "u": function(node){
+            log("html", node.startLine, node.startTag, "tagName deprecated.",
+                errorCodes.tagsIllegal, errorCodes.tagsDeprecated);
+        },
+        "p": function(node){
+            context.ps.push(node);
+        },
+        "pre": function(node){
+            context.pres.push(node);
+        },
+        "ul": validateList,
+        "ol": validateList,
+        "li": function(node){
+            var tag = node.parentNode.tagName;
+            if("ul"!=tag && "ol"!=tag){
+                log("html", node.startLine, tag+">"+node.startTag,
+                    "ul,ol 中嵌套 li", errorCodes.tagsIllegal,
+                    errorCodes.tagsNestedIllegal);
+            }
+        },
+        "dl": function(node){
+            for(var i=0,tag,l=node.childNodes.length; i<l; i++){
+                tag = node.childNodes[i].tagName;
+                if("dt" != tag && "dd" != tag){
+                  log("html", node.startLine, "dl>"+node.childNodes[i].startTag,
+                      "dl 中嵌套 dt", errorCodes.tagsIllegal,
+                      errorCodes.tagsNestedIllegal);
+                }
+            }
+        },
+        "dt": validateDefinedItem,
+        "dd": validateDefinedItem,
+        // @see http://www.w3schools.com/html/html_tables.asp
+        "table": function(node){
+            for(var i=0,tag,l=node.childNodes.length; i<l; i++){
+                tag = node.childNodes[i].tagName;
+                if("thead"!=tag && "tbody"!=tag && "tfoot"!=tag && "tr"!=tag ||
+                  "caption"!=tag || "colgroup"!=tag || "col"!=tag){
+                    log("html", node.startLine, node.startTag,
+                        "table>"+tag, errorCodes.tagsNestedIllegal);
+                }
+            }
+        },
+        "caption": validateTables,
+        "colgroup": validateTables,
+        "col": validateTables,
+        "thead": validateTables,
+        "tbody": validateTables,
+        "tfoot": validateTables,
+        "tr": function(node){
+            var tag = node.parentNode.tagName;
+            if("table"!=tag && "thead"!=tag && "tbody"!=tag && "tfoot"!=tag){
+                log("html", node.startLine, node.startTag,
+                    tag+">"+node.tagName, errorCodes.tagsNestedIllegal);
+            }
+            for(var i=0,l=node.childNodes.length; i<l; i++){
+                if("td" != node.childNodes[i].tagName){
+                    log("html", node.startLine, node.startTag,
+                        node.tagName+">"+node.childNodes[i].tagName,
+                        errorCodes.tagsNestedIllegal);
+                }
+            }
+        },
+        "th": validateTableCell,
+        "td": validateTableCell,
+        "a": function(node){
+            // XXX: 统一状态判断。
+            var debug = !(location.protocol=="https:" &&
+                location.hostname.indexOf(".alipay.com")>0);
+            if(!node.hasAttribute("href")){
+                log("html", node.startLine, node.startTag,
+                    "missing [href]", errorCodes.attrIllegal);
+                return;
+            }
+            var href = node.getAttribute("href");
+            if(href.indexOf("#")==0){return;}
+            if(/javascript:void(0);?/.test(href)){return;}
+            var uri = URI.parse(node.getAttribute("href"));
+            if((!debug && uri.hostname.indexOf(".alipay.net")>0) ||
+                0==uri.hostname.indexOf("localhost") ||
+                0==href.indexOf("$")){ // href="$xxServer.getURI('...')"
+                log("html", node.startLine, node.startTag,
+                    "a[href] illegal.", errorCodes.attrIllegal);
+            }
+            // XXX: 站内地址检测是否有效(404)，仅限于SIT环境。
+        }
+    };
+    var rules_tags_leave = {
+        "!DOCTYPE": function(node){},
+        "form": function(node){
+            context.forms.pop();
+            counter.submits = 0;
+        },
+        "object": function(node){
+            context.objects.pop();
+        },
+        "param": function(node){
+        },
+        "p": function(node){
+            context.ps.pop();
+        },
+        "pre": function(node){
+            context.pres.pop();
+        }
+    };
+    function lint(dom){
+        //walk(dom, preProcessing, {});
+        //walk(dom, rules_tags_enter, rules_tags_leave);
+        dom.walk(preProcessing, {});
+        dom.walk(rules_tags_enter, rules_tags_leave)
+        if(duplicateIDs.length > 0){
+            log("html", 0, "duplicate id:"+duplicateIDs.join(","),
+                "duplicate id.", errorCodes.attrIllegal,
+                errorCodes.idDuplicated);
+        }
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("Nodes: "+counter.nodes);
+        }
+    }
+
 
     return HTMLint;
 

@@ -19,10 +19,10 @@ window.monitor = {
     // 2. 启用 HTMLint.
     // 3. 启用 CSSLint.
     debug: !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0) ||
-        "#debug"==location.hash || false,
+        "#debug"==location.hash || true,
 
     // XXX: 添加随机数避免缓存，发布时建议设置为 false。
-    nocache: false,
+    nocache: true,
 
     // XXX: 发布时需修改服务器地址。
     server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
@@ -31,6 +31,8 @@ window.monitor = {
     //          .alipay.com
     //      .sit.alipay.net
     domain: ".sit.alipay.net",
+
+    checkProtocol: "https:" == location.protocol,
 
     // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
     // 这个一般设置为 true 就好了。
@@ -58,7 +60,9 @@ window.monitor = {
             // 存在重复 ID。
             idDuplicated: 40,
             // 缺少 rel 属性，或 rel 属性不合法
+            relIllegal: 41,
             // 链接缺少 href 属性，或 href 指向不合法。
+            hrefIllegal: 42,
 
         // 内联 JavaScript 脚本。
         inlineJS: 5,
@@ -235,7 +239,7 @@ window.monitor = {
 
         img.src = url;
     },
-    url_len: navigator.userAgent.indexOf("MSIE")>0 ? 2083 : 8190,
+    maxLength: navigator.userAgent.indexOf("MSIE")>0 ? 2083 : 8190,
     report: function(data){
         if(!data){return;}
         var d = {
@@ -255,7 +259,7 @@ window.monitor = {
         if("htmlError" in data){
             var list = [],
                 s = "",
-                len = window.monitor.url_len - JSON.toString(d).length - 10,
+                len = window.monitor.maxLength - JSON.toString(d).length - 10,
                 arr = [];
             do{
                 if(encodeURIComponent(JSON.toString(arr.concat(data.htmlError[0]))).length < len){
