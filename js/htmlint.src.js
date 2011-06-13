@@ -34,12 +34,13 @@
  *
  */
 
-window.monitor.HTMLint = (function(){
-    var URI         = window.monitor.URI,
-        S           = window.monitor.S,
-        debug       = window.monitor.debug,
-        errorCodes  = window.monitor.htmlErrorCodes,
-        checkProtocol = window.monitor.checkProtocol,
+!window.monitor || (function(){
+    var M = window.monitor,
+        URI         = M.URI,
+        S           = M.S,
+        debug       = M.debug,
+        errorCodes  = M.htmlErrorCodes,
+        checkProtocol = M.checkProtocol,
         htmlErrors  = [],
         res         = {
             img: [],
@@ -49,7 +50,7 @@ window.monitor.HTMLint = (function(){
         };
 
     function log(type, line, source, msg, code){
-        source = window.monitor.S.trim(source);
+        source = M.S.trim(source);
         if(debug && window.console && window.console.log){window.console.log("HTMLint: line:"+line+", "+"code:"+code+", message:"+msg+", source:"+source+"");}
         htmlErrors.push({ln:line, err:code, code:source});
     }
@@ -201,7 +202,8 @@ window.monitor.HTMLint = (function(){
                         node.endLine = line;
 						html = html.substring( index + 3 );
                     }else{
-                        log("html", line, lines[line], "comment unclosed.", errorCodes.syntaxError);
+                        log("html", line, lines[line], "comment unclosed.",
+                            errorCodes.syntaxError);
                         index = html.indexOf("\n");
                         html = html.substring(index);
                     }
@@ -215,7 +217,9 @@ window.monitor.HTMLint = (function(){
 						match[0].replace( endTag, parseEndTag );
                         line += getLine(match[0]);
                     }else{
-                        log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.syntaxError);
+                        log("html", line, lines[line],
+                            "tag "+stack.last().tagName+" unclosed.",
+                            errorCodes.syntaxError);
                         index = html.indexOf("<");
                         line += getLine(html.substring(0, index));
                         html = html.substring(index);
@@ -230,7 +234,8 @@ window.monitor.HTMLint = (function(){
 						match[0].replace( startTag, parseStartTag );
                         line += getLine(match[0]);
                     }else{
-                        log("html", line, lines[line], "tag unclosed.", errorCodes.syntaxError);
+                        log("html", line, lines[line], "tag unclosed.",
+                            errorCodes.syntaxError);
                         index = html.indexOf("<", 1);
                         if(index > -1){
                             line += getLine(html.substring(0, index));
@@ -261,7 +266,8 @@ window.monitor.HTMLint = (function(){
 			} else {
                 var t = "</"+stack.last().tagName+">";
                 // toLowerCase() 用于避免标签大小写不同，空格等会造成问题。
-                // 正则表达式非贪婪匹配 `(?:.|\s)*?</tagName>` 对于大脚本段的回溯会有性能问题。
+                // 正则表达式非贪婪匹配 `(?:.|\s)*?</tagName>`
+                // 对于大脚本段的回溯会有性能问题。
                 index = html.toLowerCase().indexOf(t);
                 if(index >= 0){
                     var text = html.substring(0, index);
@@ -272,7 +278,9 @@ window.monitor.HTMLint = (function(){
                     line += getLine(text);
                     html = html.substring(index);
                 }else{
-                    log("html", line, lines[line], "tag "+stack.last().tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+                    log("html", line, lines[line],
+                        "tag "+stack.last().tagName+" unclosed.",
+                        errorCodes.tagsIllegal, errorCodes.tagUnclosed);
                 }
 				//html = html.replace(regexp_special[stack.last().tagName], function(all, text){
 					//text = text.replace(/<!--(.*?)-->/g, "$1")
@@ -290,7 +298,8 @@ window.monitor.HTMLint = (function(){
 			}
 
             if ( html == last ){
-                log("html", line, lines[line], "Parse Error.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+                log("html", line, lines[line], "Parse Error.",
+                    errorCodes.tagsIllegal, errorCodes.tagUnclosed);
 
                 return dom;
             }
@@ -321,7 +330,7 @@ window.monitor.HTMLint = (function(){
          * @param unary, / if self close tags like <p />
          */
 		function parseStartTag( tag, tagName, rest, unary ) {
-            if(!window.monitor.S.isLower(tagName)){
+            if(!M.S.isLower(tagName)){
                 log("html", line, tag, "tagName must be lowerCase.",
                     errorCodes.tagsIllegal);
             }
@@ -339,12 +348,15 @@ window.monitor.HTMLint = (function(){
 			//}
 
 			if ( closeSelf[ tagName ] && stack.last().tagName == tagName ) {
-                log("html", line, stack.last().tag+"..."+lines[line], stack.last().tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+                log("html", line, stack.last().tag+"..."+lines[line],
+                    stack.last().tagName+" unclosed.", errorCodes.tagsIllegal,
+                    errorCodes.tagUnclosed);
 				parseEndTag( "", tagName );
 			}
 
             if(empty[tagName] && !unary){
-                log("html", line, lines[line], tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+                log("html", line, lines[line], tagName+" unclosed.",
+                    errorCodes.tagsIllegal, errorCodes.tagUnclosed);
             }
 			unary = empty[tagName] || !!unary;
 
@@ -357,18 +369,26 @@ window.monitor.HTMLint = (function(){
 
             rest.replace(attr, function(match, name) {
                 if(attrCache.hasOwnProperty(name)){
-                    log("html", line, lines[line], tagName+"["+name+"] duplicated.", errorCodes.attrIllegal);
+                    log("html", line, lines[line],
+                        tagName+"["+name+"] duplicated.",
+                        errorCodes.attrIllegal);
                 }
                 attrCache[name] = true;
 
                 if(!arguments[2]){
                     // Attribute without value.
                     if(!fillAttrs[name]){
-                    log("html", line, lines[line], tagName+"["+name+"] missing value.", errorCodes.attrIllegal);
+                        log("html", line, lines[line],
+                            tagName+"["+name+"] missing value.",
+                            errorCodes.attrIllegal);
                     }
-                }else if(!(window.monitor.S.startsWith(arguments[2], '"') && window.monitor.S.endsWith(arguments[2], '"')) &&
-                  !(window.monitor.S.startsWith(arguments[2], "'") && window.monitor.S.endsWith(arguments[2], "'"))){
-                    log("html", line, lines[line], tagName+"["+name+"] missing quotes.", errorCodes.attrIllegal);
+                }else if(!(M.S.startsWith(arguments[2], '"') &&
+                  M.S.endsWith(arguments[2], '"')) &&
+                  !(M.S.startsWith(arguments[2], "'") &&
+                  M.S.endsWith(arguments[2], "'"))){
+                    log("html", line, lines[line],
+                        tagName+"["+name+"] missing quotes.",
+                        errorCodes.attrIllegal);
                 }
                 var value = arguments[3] ? arguments[3] :
                     arguments[4] ? arguments[4] :
@@ -395,7 +415,9 @@ window.monitor.HTMLint = (function(){
 			// If no tag name is provided, clean shop
             if(!tagName){
                 for ( var pos = stack.length - 1; pos >= 0; pos-- ){
-                    log("html", stack[pos].line, lines[line], "tag "+stack[pos].tagName+" unclosed.", errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+                    log("html", stack[pos].line, lines[line],
+                        "tag "+stack[pos].tagName+" unclosed.",
+                        errorCodes.tagsIllegal, errorCodes.tagUnclosed);
 
                     //!stack.pop();
                     currNode.endTag = tag;
@@ -403,7 +425,7 @@ window.monitor.HTMLint = (function(){
                     currNode = currNode.parentNode;
                 }
             }else{
-                if(!window.monitor.S.isLower(tagName)){
+                if(!M.S.isLower(tagName)){
                     log("html", line, tag, "tagName must be lowerCase.",
                         errorCodes.tagsIllegal);
                 }
@@ -417,22 +439,24 @@ window.monitor.HTMLint = (function(){
                     currNode.endLine = line;
                     currNode  = currNode.parentNode;
                 }else{
-                    log("html", line, lines[stack.last().line], "tag "+stack.last().tagName+" unclosed."+tagName, errorCodes.tagsIllegal, errorCodes.tagUnclosed);
+                    log("html", line, lines[stack.last().line],
+                        "tag "+stack.last().tagName+" unclosed."+tagName,
+                        errorCodes.tagsIllegal, errorCodes.tagUnclosed);
                 }
             }
 		}
 	};
 
-    var HTMLint = function(html){
+    M.HTMLint = function(html){
         var t0 = new Date();
         var dom = HTMLParser(html, {});
-        if(window.monitor.debug && window.console && window.console.log){
+        if(M.debug && window.console && window.console.log){
             window.console.log("HTMLParse time: "+(new Date()-t0)+"ms.");
         }
 
         var t1 = new Date();
         lint(dom);
-        if(window.monitor.debug && window.console && window.console.log){
+        if(M.debug && window.console && window.console.log){
             window.console.log("HTMLint time: "+(new Date()-t1)+"ms.");
         }
 
@@ -670,7 +694,7 @@ window.monitor.HTMLint = (function(){
             counter.nodes++;
             // cache elements ids for label test.
             if(node.hasAttribute("id")){
-                id = window.monitor.S.trim(node.getAttribute("id"));
+                id = M.S.trim(node.getAttribute("id"));
                 if(""==id){
                     log("html", node.startLine, node.startTag,
                         node.tagName+"[id="+id+"]", errorCodes.attrIllegal);
@@ -1064,32 +1088,10 @@ window.monitor.HTMLint = (function(){
                 "duplicate id.", errorCodes.attrIllegal,
                 errorCodes.idDuplicated);
         }
-        if(window.monitor.debug && window.console && window.console.log){
+        if(M.debug && window.console && window.console.log){
             window.console.log("Nodes: "+counter.nodes);
         }
     }
-
-
-    return HTMLint;
-
-    //return {
-        //parse: HTMLParser,
-        //lint: HTMLint,
-        //getRes: function(){
-            //return res;
-        //},
-        //getErrors: function(){
-            //return htmlErrors;
-        //},
-        //clear: function(){
-            //res.img.length = 0;
-            //res.js.length = 0;
-            //res.css.length = 0;
-            //res.fla.length = 0;
-
-            //htmlErrors.length = 0;
-        //}
-    //};
 
 	function makeMap(str){
 		var obj = {}, items = str.split(",");

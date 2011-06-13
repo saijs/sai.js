@@ -365,18 +365,18 @@ window.monitor || (function(){
     var src = "" || (function(){
         var ss = document.getElementsByTagName("script"),
             src = ss[ss.length - 1].src;
-        return src;
+        return M.URI.folder(src);
     })();
     DOM.ready(function(){
         M.readyTime = new Date() - startTime;
         window.setTimeout(function(){
             try{
             if(M.debug){
-                jsLoader(M.URI.folder(src)+"domlint.src.js");
-                jsLoader(M.URI.folder(src)+"htmlint.src.js");
-                jsLoader(M.URI.folder(src)+"monitor-b.src.js");
+                jsLoader(src+"domlint.src.js");
+                jsLoader(src+"htmlint.src.js");
+                jsLoader(src+"monitor-b.src.js");
             }else{
-                jsLoader(M.URI.folder(src)+"monitor-b.js");
+                jsLoader(src+"monitor-b.js");
             }
             }catch(ex){}
         }, M.delay);
