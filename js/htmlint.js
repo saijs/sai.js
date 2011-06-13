@@ -574,11 +574,11 @@ window.monitor.HTMLint = (function(){
         if(!node.hasAttribute("name")){
             var type;
             if(node.hasAttribute("type")){
-                type = node.getAttribute("type");
+                type = node.getAttribute("type").toLowerCase();
             }else if("button" == node.tagName){
                 type = "button";
             }
-            if("button"==type || "submit"==type || "image"==type){
+            if("button"!=type && "submit"!=type && "image"!=type){
                 log("html", node.startLine, html,
                     "missing attribute: [name].", errorCodes.attrIllegal);
             }

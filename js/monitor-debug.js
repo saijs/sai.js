@@ -6,6 +6,7 @@
  * @version 2011/05/17
  */
 
+if("undefined"!=typeof(window.monitor)){
 window.monitor.Monitor = (function(){
 
     /**
@@ -144,77 +145,41 @@ window.monitor.Monitor = (function(){
         }
     };
 
-    var DOM = {
-        ready: function(callback){
-            /* Internet Explorer */
-            /*@cc_on
-            @if (@_win32 || @_win64)
-                document.write('<script id="ieScriptLoad" defer="defer" src="//:"><\/script>');
-                document.getElementById("ieScriptLoad").onreadystatechange = function(){
-                    if(this.readyState == 'complete'){
-                        callback();
-                    }
-                };
-                return;
-            @end @*/
-            /* Mozilla, Chrome, Opera */
-            if(document.addEventListener){
-                document.addEventListener("DOMContentLoaded", callback, false);
-                return;
-            }
-            /* Safari, iCab, Konqueror */
-            if(/KHTML|WebKit|iCab/i.test(navigator.userAgent)){
-                var timer = window.setInterval(function(){
-                    if(/loaded|complete/i.test(document.readyState)){
-                        callback();
-                        clearInterval(timer);
-                    }
-                }, 10);
-                return;
-            }
-            /* Other web browser */
-            window.onload = callback;
-        }
-    };
     // 1. merge(DOMLint, HTMLint);
     // 2. sit ? HTMLint : DOMLint;
     // 3. HTMLint || DOMLint
-    DOM.ready(function(){
-        window.monitor.endTime = new Date();
 
-        var dbg = window.monitor.debug;
-        window.setTimeout(function(){
-            if("undefined" != typeof(window.monitor.DOMLint)){
-                var htmlErr = window.monitor.DOMLint.parse();
-                window.monitor.report(htmlErr);
+    var M = window.monitor;
+    window.setTimeout(function(){
+        if("undefined" != typeof(M.DOMLint)){
+            var htmlErr = M.DOMLint.parse();
+            M.report(htmlErr);
+        }
+        if(M.debug && "undefined"!=typeof(M.HTMLint)){
+            // Note: 目前要求 window。monitor.url 是不带 search & hash 的部分。
+            // 如果日后需要带上这些部分（概率很小），这里需要调整。
+            var url = M.url + location.search;
+            if(M.nocache){
+                url = url + (location.search.indexOf("?")==0 ? "&" : "?") +
+                    M.S.rand();
             }
-            if(dbg && "undefined"!=typeof(window.monitor.HTMLint)){
-                // Note: 目前要求 window。monitor.url 是不带 search & hash 的部分。
-                // 如果日后需要带上这些部分（概率很小），这里需要调整。
-                var url = window.monitor.url + location.search;
-                if(window.monitor.nocache){
-                    url = url + (location.search.indexOf("?")==0 ? "&" : "?") +
-                        window.monitor.S.rand();
+            AJAX.send(url, "get", "", function(st, re){
+                if(st=="ok"){
+                    var html = re.responseText;
+                    var size = M.S.byteLength(html);
+                    var lint = M.HTMLint(html);
+                    M.report({
+                        htmlSize: size,
+                        res: lint.res,
+                        domready: M.readyTime
+                    });
+                    M.report({
+                        htmlError: lint.htmlError
+                    });
                 }
-                AJAX.send(url, "get", "", function(st, re){
-                    if(st=="ok"){
-                        var html = re.responseText;
-                        var size = window.monitor.S.byteLength(html);
-                        var time = window.monitor.endTime - window.monitor.startTime;
-                        var lint = window.monitor.HTMLint(html);
-                        window.monitor.report({
-                            htmlSize: size,
-                            res: lint.res,
-                            domready: time
-                        });
-                        window.monitor.report({
-                            htmlError: lint.htmlError
-                        });
-                    }
-                });
-            }
-        }, window.monitor.delay);
-    });
+            });
+        }
+    }, 10);
     /*
     // Debug.
     var D = {
@@ -286,3 +251,4 @@ window.monitor.Monitor = (function(){
         //hide: D.hide
     //};
 })();
+}

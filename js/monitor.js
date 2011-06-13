@@ -9,41 +9,50 @@
 // Quality Monitoring System.
 
 // namespace.
-window.monitor = {
-    startTime: new Date(),
-    // XXX: 发布时建议设置为 false。
-    // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
-    //
-    // 非调试模式：
-    // 1. 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
-    // 2. 启用 HTMLint.
-    // 3. 启用 CSSLint.
-    debug: !(location.protocol=="https:" && location.hostname.indexOf(".alipay.com")>0) ||
-        "#debug"==location.hash || true,
+window.monitor || (function(){
 
-    // XXX: 添加随机数避免缓存，发布时建议设置为 false。
-    nocache: true,
+    var startTime = new Date();
 
-    // XXX: 发布时需修改服务器地址。
-    server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
+    var M = window.monitor = {
+        // XXX: 发布时建议设置为 false。
+        // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
+        //
+        // 非调试模式：
+        // 1. 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
+        // 2. 启用 HTMLint.
+        // 3. 启用 CSSLint.
+        debug: !(location.protocol=="https:" &&
+            location.hostname.indexOf(".alipay.com")>0) ||
+            "#debug"==location.hash || true,
 
-    // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
-    //          .alipay.com
-    //      .sit.alipay.net
-    domain: ".sit.alipay.net",
+        // XXX: 添加随机数避免缓存，发布时建议设置为 false。
+        nocache: true,
 
-    checkProtocol: "https:" == location.protocol,
+        // XXX: 发布时需修改服务器地址。
+        server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
 
-    // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
-    // 这个一般设置为 true 就好了。
-    rethrow: true,
-    // DOMReady 并延迟毫秒数之后开始运行(HTML,CSS,JAVASCRIPT)规则验证。
-    delay: 1800,
-    // userAgent.
-    ua: navigator.userAgent,
+        // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
+        //          .alipay.com
+        //      .sit.alipay.net
+        domain: ".sit.alipay.net",
+
+        checkProtocol: "https:" == location.protocol,
+
+        // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
+        // 这个一般设置为 true 就好了。
+        rethrow: true,
+        // DOMReady 并延迟毫秒数之后开始运行(HTML,CSS,JAVASCRIPT)规则验证。
+        delay: 1800,
+        // userAgent.
+        ua: navigator.userAgent
+    };
+
     // page url, without search & hash.
-    url: location.protocol+"\/\/"+location.hostname+location.pathname,
-    htmlErrorCodes: {
+    var idx = location.pathname.indexOf(";jsessionid=");
+    M.url = location.protocol + "\/\/" + location.hostname +
+        (idx<0 ? location.pathname : location.pathname.substr(0, idx));
+
+    M.htmlErrorCodes = {
         syntaxError: 0,
 
         // 缺少DOCTYPE，或DOCTYPE不合法。
@@ -83,17 +92,14 @@ window.monitor = {
 
         cssIllegal: 9,
             cssByImport: 90
-    },
-    res: {
+    };
+    M.res = {
         img:[],
         css:[],
         js:[],
         fla:[]
-    },
-    B: {
-        ie: navigator.userAgent.indexOf("MSIE") > 0 && !window.opera
-    },
-    JSON: {
+    };
+    var JSON = {
         escape: function(str){
             return str.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
         },
@@ -104,7 +110,7 @@ window.monitor = {
 
             switch(typeof obj){
             case 'string':
-                return '"' + window.monitor.JSON.escape(obj) + '"';
+                return '"' + JSON.escape(obj) + '"';
             case 'number':
                 return isFinite(obj)?String(obj):'null';
             case 'boolean':
@@ -120,7 +126,7 @@ window.monitor = {
                 if("[object Array]" == type){
                     var a = [];
                     for(var i=0,l=obj.length; i<l; i++){
-                        a[i] = window.monitor.JSON.toString(obj[i]);
+                        a[i] = JSON.toString(obj[i]);
                     }
                     return '[' + a.join(',') + ']';
                 }else if("[object RegExp]" == type){
@@ -129,7 +135,7 @@ window.monitor = {
                     var o = [];
                     for(var k in obj){
                         if(Object.prototype.hasOwnProperty.call(obj, k)){
-                            o.push('"' + window.monitor.JSON.escape(k) + '"' + ':' + window.monitor.JSON.toString(obj[k]));
+                            o.push('"' + JSON.escape(k) + '"' + ':' + JSON.toString(obj[k]));
                         }
                     }
                     return '{' + o.join(',') + '}';
@@ -137,9 +143,9 @@ window.monitor = {
             default:
             }
         }
-    },
+    };
     // URI, URL, Links, Location...
-    URI: {
+    M.URI = {
         // 获得Archor对象，便于获取其protocol,host...属性。
         // 可惜IE直接复制相对地址无法获得正确的属性，需要设置绝对地址。
         // @param {String"} uri 绝对/相对地址。
@@ -153,15 +159,15 @@ window.monitor = {
                 throw new TypeError("required string argument.");
             }
             var host = location.protocol + "\/\/" + location.hostname,
-                base = host + location.pathname.replace(window.monitor.URI.reFolderExt, uri);
+                base = host + location.pathname.replace(M.URI.reFolderExt, uri);
             var a = document.createElement("a");
-            if(!window.monitor.URI.reProtocol.test(uri)){
+            if(!M.URI.reProtocol.test(uri)){
                 if(uri.indexOf("/")==0){
                     uri = location.protocol + "\/\/" + location.hostname + uri;
                     //uri = host + uri;
                 }else{
                     uri = location.protocol + "\/\/" + location.hostname +
-                        location.pathname.replace(window.monitor.URI.reProtocol, uri);
+                        location.pathname.replace(M.URI.reProtocol, uri);
                 }
             }
             a.setAttribute("href", uri);
@@ -171,10 +177,15 @@ window.monitor = {
 			var idx = uri.indexOf("?");
 			if(idx < 0){return uri;}
             return uri.substring(0, idx);
+        },
+        folder: function(uri){
+            if(!uri){return "";}
+            var idx = uri.lastIndexOf("/");
+            return idx<0 ? "" : uri.substring(0, idx+1);
         }
-    },
+    };
     // String.
-    S: {
+    M.S = {
         startsWith: function(str, ch){
             if(typeof(str)=="undefined" || typeof(ch)=="undefined"){return false;}
             return str.indexOf(ch) == 0;
@@ -206,8 +217,8 @@ window.monitor = {
             var s = ""+Math.random(), l=s.length;
             return s.substr(2,2) + s.substr(l-2);
         }
-    },
-    identify: function(){
+    };
+    function identify(){
         var b = document.cookie + navigator.userAgent + navigator.plugins.length + Math.random(),
             n=0,
             rand = ""+Math.random();
@@ -215,16 +226,23 @@ window.monitor = {
             n += i * b.charCodeAt(i);
         }
         return n.toString(parseInt(Math.random()*10 + 16));
-    },
-    send: function(url, data){
+    }
+
+    var Browser = {
+        ie: navigator.userAgent.indexOf("MSIE") > 0 && !window.opera
+    };
+    var URLLength = Browser.ie ? 2083 : 8190;
+
+    function send(url, data){
         if(!data){return;}
-        if(window.monitor.debug && window.console && window.console.log){
+        if(M.debug && window.console && window.console.log){
             window.console.log("SEND: ", data.length, data);
         }
-        if(location.hostname.indexOf(window.monitor.domain)<0){return;}
+        if(location.hostname.indexOf(M.domain)<0){return;}
         data = encodeURIComponent(data);
         var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
         var times=0; // re-try times, eg: 3.
+
         // @see http://www.javascriptkit.com/jsref/image.shtml
         var img = new Image(1,1);
         img.onload = function(){img = null;};
@@ -238,44 +256,44 @@ window.monitor = {
         };
 
         img.src = url;
-    },
-    maxLength: navigator.userAgent.indexOf("MSIE")>0 ? 2083 : 8190,
-    report: function(data){
+    };
+    M.report = function(data){
         if(!data){return;}
         var d = {
-                url: window.monitor.url,
-                ua: window.monitor.ua,
+                url: M.url,
+                ua: M.ua,
                 // 分批发送数据的批次标识。
-                id: window.monitor.identify(),
+                id: identify(),
                 // 避免缓存。
-                rand: window.monitor.S.rand()
-            },
-            JSON = window.monitor.JSON,
-            send = window.monitor.send,
-            server = window.monitor.server;
+                rand: M.S.rand()
+            };
 
         // TODO: 如果初始数据本身就超了，呃，算了。
 
-        if("htmlError" in data){
+        if(data.hasOwnProperty("htmlError")){
             var list = [],
                 s = "",
-                len = window.monitor.maxLength - JSON.toString(d).length - 10,
+                len = URLLength - JSON.toString(d).length - 10,
                 arr = [];
-            do{
+            while(data.htmlError.length>0){
                 if(encodeURIComponent(JSON.toString(arr.concat(data.htmlError[0]))).length < len){
                     arr.push(data.htmlError.shift());
                 }else{
                     if(arr.length > 0){
                         d.htmlError = arr;
                     }else{
-                        // overflow maxlength in single data.
+                        // overflow url-length in single data.
                         d.htmlError = data.htmlError.shift();
                         d.htmlError.msg = d.htmlError.msg.substring(0,100);
                     }
-                    send(server, JSON.toString(d));
+                    send(M.server, JSON.toString(d));
                     arr.length = 0;
                 }
-            }while(data.htmlError.length>0);
+            }
+            if(arr.length){
+                d.htmlError = arr;
+                send(M.server, JSON.toString(d));
+            }
         }else{
             for(var k in data){
                 if(Object.prototype.hasOwnProperty.call(data, k)){
@@ -283,7 +301,68 @@ window.monitor = {
                 }
             }
             var s = JSON.toString(d);
-            send(server, s);
+            send(M.server, s);
         }
     }
-};
+
+    var DOM = {
+        ready: function(callback){
+            /* Internet Explorer */
+            /*@cc_on
+            @if (@_win32 || @_win64)
+                document.write('<script id="ieScriptLoad" defer="defer" src="//:"><\/script>');
+                document.getElementById("ieScriptLoad").onreadystatechange = function(){
+                    if(this.readyState == 'complete'){
+                        callback();
+                    }
+                };
+                return;
+            @end @*/
+            /* Mozilla, Chrome, Opera */
+            if(document.addEventListener){
+                document.addEventListener("DOMContentLoaded", callback, false);
+                return;
+            }
+            /* Safari, iCab, Konqueror */
+            if(/KHTML|WebKit|iCab/i.test(navigator.userAgent)){
+                var timer = window.setInterval(function(){
+                    if(/loaded|complete/i.test(document.readyState)){
+                        callback();
+                        clearInterval(timer);
+                    }
+                }, 10);
+                return;
+            }
+            /* Other web browser */
+            window.onload = callback;
+        }
+    };
+    function jsLoader(src){
+        if(M.nocache){
+            src += (location.search.indexOf("?")==0 ? "&" : "?") + M.S.rand();
+        }
+        var script = document.createElement("script");
+        script.setAttribute("type", "text/javascript");
+        script.setAttribute("charset", "utf-8");
+        script.setAttribute("src", src);
+        document.documentElement.appendChild(script);
+    };
+
+    var src = "" || (function(){
+        var ss = document.getElementsByTagName("script"),
+            src = ss[ss.length - 1].src;
+        return src;
+    })();
+    DOM.ready(function(){
+        M.readyTime = new Date() - startTime;
+        window.setTimeout(function(){
+            if(M.debug){
+                jsLoader(M.URI.folder(src)+"domlint.js");
+                jsLoader(M.URI.folder(src)+"htmlint.js");
+                jsLoader(M.URI.folder(src)+"monitor-debug.js");
+            }else{
+                jsLoader(M.URI.folder(src)+"monitor-b.js");
+            }
+        }, M.delay);
+    });
+})();
