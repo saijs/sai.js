@@ -442,7 +442,6 @@ window.monitor.HTMLint = (function(){
         };
     };
     //! linter v2.
-    // XXX: getElementsByTagName(*, callback) to walk.
     function walk(node, enter, leave){
         if(!node){return;}
 
@@ -530,7 +529,8 @@ window.monitor.HTMLint = (function(){
             objects: 0,
             params: 0,
             embeds: 0,
-            submits: 0
+            submits: 0,
+            nodes: 0
         },
         context = {
             heads: new Stack(),
@@ -667,6 +667,7 @@ window.monitor.HTMLint = (function(){
         "onbeforeprint,onpaint,onbeforeunload").split(",");
     var preProcessing = {
         "*": function(node){
+            counter.nodes++;
             // cache elements ids for label test.
             if(node.hasAttribute("id")){
                 id = window.monitor.S.trim(node.getAttribute("id"));
@@ -1062,6 +1063,9 @@ window.monitor.HTMLint = (function(){
             log("html", 0, "duplicate id:"+duplicateIDs.join(","),
                 "duplicate id.", errorCodes.attrIllegal,
                 errorCodes.idDuplicated);
+        }
+        if(window.monitor.debug && window.console && window.console.log){
+            window.console.log("Nodes: "+counter.nodes);
         }
     }
 
