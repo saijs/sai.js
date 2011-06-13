@@ -305,6 +305,20 @@ window.monitor || (function(){
         }
     }
 
+    // JSniffer.
+    window.onerror = function(msg, file, line){
+        var d = {
+            jsError: {
+                file: window.monitor.URI.path(file),
+                ln: line,
+                msg: msg//+" | "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
+            }
+        };
+        M.report(d);
+        // false: re-throw error, true: capture error.
+        return !M.rethrow;
+    };
+
     var DOM = {
         ready: function(callback){
             /* Internet Explorer */
@@ -356,13 +370,15 @@ window.monitor || (function(){
     DOM.ready(function(){
         M.readyTime = new Date() - startTime;
         window.setTimeout(function(){
+            try{
             if(M.debug){
-                jsLoader(M.URI.folder(src)+"domlint.js");
-                jsLoader(M.URI.folder(src)+"htmlint.js");
-                jsLoader(M.URI.folder(src)+"monitor-debug.js");
+                jsLoader(M.URI.folder(src)+"domlint.src.js");
+                jsLoader(M.URI.folder(src)+"htmlint.src.js");
+                jsLoader(M.URI.folder(src)+"monitor-b.src.js");
             }else{
                 jsLoader(M.URI.folder(src)+"monitor-b.js");
             }
+            }catch(ex){}
         }, M.delay);
     });
 })();

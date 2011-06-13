@@ -1,2 +1,6 @@
 test/*
 *.min.js
+*.txt
+*.bat
+*.zip
+*.rar
