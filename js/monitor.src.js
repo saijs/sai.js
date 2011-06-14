@@ -230,10 +230,10 @@ window.monitor || (function(){
         return n.toString(parseInt(Math.random()*10 + 16));
     }
 
-    var Browser = {
+    M.Browser = {
         ie: navigator.userAgent.indexOf("MSIE") > 0 && !window.opera
     };
-    var URLLength = Browser.ie ? 2083 : 8190;
+    var URLLength = M.Browser.ie ? 2083 : 8190;
 
     function abort(img){
         try{
@@ -379,7 +379,7 @@ window.monitor || (function(){
     };
     function jsLoader(src){
         if(M.nocache){
-            src += (location.search.indexOf("?")==0 ? "&" : "?") + M.S.rand();
+            src += (src.indexOf("?")>=0 ? "&" : "?") + M.S.rand();
         }
         var script = document.createElement("script");
         script.setAttribute("type", "text/javascript");
@@ -388,21 +388,26 @@ window.monitor || (function(){
         document.documentElement.appendChild(script);
     };
 
-    var src = "" || (function(){
+    (function(){
         var ss = document.getElementsByTagName("script"),
-            src = ss[ss.length - 1].src;
-        return M.URI.folder(src);
+            script = ss[ss.length - 1];
+        M.base = M.URI.folder(script.src);
+
+        var src = script.getAttribute("src"),
+            idx = src.indexOf("?");
+        M.version = idx<0?"":src.substr(idx);
     })();
+
     DOM.ready(function(){
         M.readyTime = new Date() - startTime;
         window.setTimeout(function(){
             try{
             if(M.debug){
-                jsLoader(src+"domlint.src.js");
-                jsLoader(src+"htmlint.src.js");
-                jsLoader(src+"monitor-b.src.js");
+                jsLoader(M.base+"domlint.src.js"+M.version);
+                //jsLoader(M.base+"htmlint.src.js"+M.version);
+                jsLoader(M.base+"monitor-b.src.js"+M.version);
             }else{
-                jsLoader(src+"monitor-b.js");
+                jsLoader(M.base+"monitor-b.js"+M.version);
             }
             }catch(ex){}
         }, M.delay);
