@@ -43,6 +43,8 @@ window.monitor || (function(){
         rethrow: true,
         // DOMReady 并延迟毫秒数之后开始运行(HTML,CSS,JAVASCRIPT)规则验证。
         delay: 1800,
+        // report request timeout.
+        timeout: 2000,
         // userAgent.
         ua: navigator.userAgent
     };
@@ -233,6 +235,26 @@ window.monitor || (function(){
     };
     var URLLength = Browser.ie ? 2083 : 8190;
 
+    function abort(img){
+        try{
+            // @see http://stackoverflow.com/questions/930237/javascript-cancel-stop-image-requests
+            // @see http://stackoverflow.com/questions/3146200/stop-loading-of-images-on-a-hashchange-event-via-javascript-or-jquery
+            //
+            // @see https://developer.mozilla.org/en/DOM/window.stop
+            if(typeof(window.stop) !== "undefined"){
+                window.stop();
+            }else if(typeof(document.execCommand) !== "undefined"){
+                // @see http://msdn.microsoft.com/en-us/library/ms536419%28v=vs.85%29.aspx
+                // @see http://msdn.microsoft.com/en-us/library/ms533049%28v=vs.85%29.aspx
+                // @see https://developer.mozilla.org/En/Document.execCommand
+                document.execCommand("StopImage", false);
+                document.execCommand("Stop", false);
+            }
+        }catch(ex){}
+        img.src = null;
+        img.completed = true;
+        img = null;
+    };
     function send(url, data){
         if(!data){return;}
         if(M.debug && window.console && window.console.log){
@@ -245,15 +267,19 @@ window.monitor || (function(){
 
         // @see http://www.javascriptkit.com/jsref/image.shtml
         var img = new Image(1,1);
-        img.onload = function(){img = null;};
-        img.onerror = function(evt){
-            // for RE-TRY.
-            if((--times)<0){
-                img = null;
-            }else{
-                img.src = url;
-            }
-        };
+        function clearImage(){
+            window.clearTimeout(timer);
+            timer = null;
+            img.completed = true;
+            img = null;
+        }
+        img.onload = clearImage;
+        img.onerror = clearImage;
+        img.onabort = clearImage;
+        var timer = window.setTimeout(function(){
+            if(!img || img.completed){return;}
+            abort(img);
+        }, M.timeout);
 
         img.src = url;
     };
