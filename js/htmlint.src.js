@@ -22,16 +22,6 @@
  * HTMLtoDOM(htmlString, document);
  * HTMLtoDOM(htmlString, document.body);
  *
- * TODO: innerHTML
- * TODO: flash, wmode=transparent|...
- * XXX: rules = {
- *          "!DOCTYPE":function(elem, html, dom){},
- *          "!--":function(elem, html, dom){},
- *          "html":function(elem, html, dom){},
- *          "form":function(elem, html, dom){}
- *      }
- * TODO: isLower tagName? in parser.
- *
  */
 
 !window.monitor || (function(){
@@ -333,11 +323,13 @@
             if(!M.S.isLower(tagName)){
                 log("html", line, tag, "tagName must be lowerCase.",
                     errorCodes.tagsIllegal);
+
+                tagName = tagName.toLowerCase();
             }
             var node = new Node();
             node.startTag = tag;
             node.startLine = line;
-            node.tagName = tagName.toLowerCase();
+            node.tagName = tagName;
             currNode.appendChild(node);
 
             //! Err...
@@ -368,6 +360,13 @@
             var attrs = [], attrCache={};
 
             rest.replace(attr, function(match, name) {
+                if(!M.S.isLower(name)){
+                    log("html", line, lines[line],
+                        "attr is not lowerCase: "+tagName+"["+name+"]",
+                        errorCodes.attrIllegal);
+
+                    name = name.toLowerCase();
+                }
                 if(attrCache.hasOwnProperty(name)){
                     log("html", line, lines[line],
                         tagName+"["+name+"] duplicated.",
@@ -428,8 +427,10 @@
                 if(!M.S.isLower(tagName)){
                     log("html", line, tag, "tagName must be lowerCase.",
                         errorCodes.tagsIllegal);
+
+                    tagName = tagName.toLowerCase();
                 }
-                if(stack.last().tagName.toLowerCase() == tagName.toLowerCase()){
+                if(stack.last().tagName == tagName){
                     if(handler.end){
                         handler.end(stack.last().tagName);
                     }
@@ -472,10 +473,10 @@
         var tagName = node.tagName;
         // root node is virtual node, without tagName...
         if(enter && tagName){
-            if("function"==typeof(enter["*"])){
+            if(enter.hasOwnProperty("*") && "function"==typeof(enter["*"])){
                 enter["*"](node);
             }
-            if(tagName in enter && "function"==typeof(enter[tagName])){
+            if(enter.hasOwnProperty(tagName) && "function"==typeof(enter[tagName])){
                 enter[tagName](node);
             }
         }
@@ -487,10 +488,10 @@
         }
 
         if(leave && tagName){
-            if(tagName in leave && "function"==typeof(leave[tagName])){
+            if(leave.hasOwnProperty(tagName) && "function"==typeof(leave[tagName])){
                 leave[tagName](node);
             }
-            if("function"==typeof(leave["*"])){
+            if(leave.hasOwnProperty("*") && "function"==typeof(leave["*"])){
                 leave["*"](node);
             }
         }
@@ -583,9 +584,10 @@
     }
     // validate <input>, <button>, <select>, <textarea>.
     function validateFormElements(node){
-        // TODO: donot validate button's name missed.
         if("noform"==getFormName()){
-            console.log("noform: "+node.startTag)
+            if(M.debug && window.console && window.console.log){
+                window.console.log("noform: "+node.startTag);
+            }
         }
         var html = getFormName() + " " + node.startTag;
         if(node.hasAttribute("id")){
@@ -634,12 +636,12 @@
             // XXX: 表单不允许有多个 submit?
             //type = node.getAttribute("type").toLowerCase();
             //if(type=="submit" && (++counter.submits > 1)){
-                //log("html", html, node.startTag,
+                //log("html", node.startLine, html,
                     //"too much more submit buttons.",
                     //errorCodes.tagsIllegal);
             //}
         }else{
-            log("html", html, node.startTag,
+            log("html", node.startLine, html,
                 "missing attribute: [type].", errorCodes.attrIllegal);
         }
         validateFormElements(node);
@@ -666,12 +668,21 @@
     }
     // validate <thead>, <tbody>, <tfoot>, <caption>, <colgroup>, <col>.
     function validateTables(node){
-        var tag = node.parentNode.tagName;
-        if("table"!=tag){
+        var ptag = node.parentNode.tagName;
+        if("table"!=ptag){
             log("html", node.startLine, node.startTag,
-                tag+">"+node.tagName, errorCodes.tagsNestedIllegal);
+                ptag+">"+node.tagName, errorCodes.tagsNestedIllegal);
         }
-        // TODO: validate childNodes for thead, tbody, tfoot.
+        // validate childNodes for thead, tbody, tfoot.
+        var tag = node.tagName;
+        if("thead"==tag || "tbody"==tag || "tfoot"==tag){
+            for(var i=0,l=node.childNodes.length; i<l; i++){
+                if("tr"!=node.childNodes[i].tagName){
+                    log("html", node.startLine, node.startTag,
+                        tag+">"+childNodes[i].tagName);
+                }
+            }
+        }
     }
     // vali  <th>, <td>.
     function validateTableCell(node){
@@ -726,19 +737,10 @@
                     errorCodes.inlineCSS);
             }
             // <p>
-            if(context.ps.length || context.pres.length){
-                switch(node.tagName){
-                case "a":
-                case "br":
-                case "code":
-                case "em":
-                case "span":
-                case "strong":
-                    break;
-                default:
+            if(!context.ps.empty() || !context.pres.empty()){
+                if(!inline[node.tagName]){
                     log("html", node.startLine, "p>"+node.startTag,
-                        "tags in p just a,em,span,strong.",
-                        errorCodes.tagsIllegal,
+                        "p > inline element.", errorCodes.tagsIllegal,
                         errorCodes.tagsNestedIllegal);
                 }
             }
@@ -748,16 +750,16 @@
         },
         //"!--": function(node){
             //var reSpaceLeft = /^\s+/, reSpaceRight = /\s+$/;
-            //if(!reSpaceLeft.test(elems[i].innerHTML) ||
-                // !reSpaceRight.test(elems[i].innerHTML)){
-                //var cmt = elems[i].innerHTML;
-                //log("html", elems[i].startLine,
-                    //elems[i].startTag+(cmt.length<20?cmt:cmt.substr(0,20)+"...")+
-                    //elems[i].endTag, "comment required space at start and end.",
+            //if(!reSpaceLeft.test(node.innerHTML) ||
+                // !reSpaceRight.test(node.innerHTML)){
+                //var cmt = node.innerHTML;
+                //log("html", node.startLine,
+                    //node.startTag+(cmt.length<20?cmt:cmt.substr(0,20)+"...")+
+                    //node.endTag, "comment required space at start and end.",
                     //errorCodes.commentIllegal);
             //}
         //},
-        "head": function(){
+        "head": function(node){
             counter.heads++;
             context.heads.push(node);
             // check the document.charset
@@ -773,7 +775,7 @@
               )
             ){
                 log("html", meta.startLine, "document charset illegal.",
-                    "missing document charset");
+                    "missing document charset", errorCodes.charsetIllegal);
             }
         },
         "title": function(node){
@@ -841,7 +843,7 @@
             rel = node.getAttribute("rel");
             uri = URI.parse(node.getAttribute("href"));
             // link 标签的嵌套。
-            //tag = node.parentNode.tagName.toLowerCase();
+            //tag = node.parentNode.tagName;
             //if("head" != tag){
                 //log("html", node.startLine, tag+">"+node.startTag,
                     //"tags nested error.", errorCodes.tagsIllegal,
@@ -878,7 +880,7 @@
                 // style 标签的嵌套。
                 //tag = node.parentNode.tagName;
                 //tag = node.parentNode.tagName;
-                //if(tag && tag.toLowerCase() != "head"){
+                //if(tag && tag != "head"){
                     //log("html", node.startLine, tag+">style",
                         //"style must be in the head.", errorCodes.tagsIllegal,
                         //errorCodes.tagsNestedIllegal);
@@ -918,7 +920,7 @@
         "object": function(node){
             context.objects.push(node);
             counter.objects++;
-            if(node.getAttribute("codebase")){
+            if(node.hasAttribute("codebase")){
                 uri = URI.parse(node.getAttribute("codebase"));
                 if(checkProtocol && "https:"!=uri.protocol){
                     log("html", node.startLine,
