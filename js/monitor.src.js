@@ -11,6 +11,18 @@
 // namespace.
 window.monitor || (function(){
 
+    var _script = (function(){
+        var ss = document.getElementsByTagName("script"),
+            script = ss[ss.length - 1];
+        return script;
+    })();
+
+    // 1:100
+    var rate = parseFloat(_script.getAttribute("data-rate")) || 0.01;
+    if(0 != Math.floor(Math.random()/rate)){
+        return;
+    }
+
     var startTime = new Date();
 
     var M = window.monitor = {
@@ -101,18 +113,20 @@ window.monitor || (function(){
         js:[],
         fla:[]
     };
-    var JSON = {
+    var $JSON = {
         escape: function(str){
             return str.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
         },
         toString: function(obj){
-            if(window.JSON && "function"==typeof(window.JSON.stringify)){
-                return window.JSON.stringify(obj);
-            }
+            // XXX: 受 https://img.alipay.com/assets/j/sys/ad_customize.js 影响。
+            // 无法使用原生 JSON 对象。
+            //if(window.JSON && "function"==typeof(window.JSON.stringify)){
+                //return window.JSON.stringify(obj);
+            //}
 
             switch(typeof obj){
             case 'string':
-                return '"' + JSON.escape(obj) + '"';
+                return '"' + $JSON.escape(obj) + '"';
             case 'number':
                 return isFinite(obj)?String(obj):'null';
             case 'boolean':
@@ -128,7 +142,7 @@ window.monitor || (function(){
                 if("[object Array]" == type){
                     var a = [];
                     for(var i=0,l=obj.length; i<l; i++){
-                        a[i] = JSON.toString(obj[i]);
+                        a[i] = $JSON.toString(obj[i]);
                     }
                     return '[' + a.join(',') + ']';
                 }else if("[object RegExp]" == type){
@@ -137,7 +151,7 @@ window.monitor || (function(){
                     var o = [];
                     for(var k in obj){
                         if(Object.prototype.hasOwnProperty.call(obj, k)){
-                            o.push('"' + JSON.escape(k) + '"' + ':' + JSON.toString(obj[k]));
+                            o.push('"' + $JSON.escape(k) + '"' + ':' + $JSON.toString(obj[k]));
                         }
                     }
                     return '{' + o.join(',') + '}';
@@ -299,10 +313,10 @@ window.monitor || (function(){
         if(data.hasOwnProperty("htmlError")){
             var list = [],
                 s = "",
-                len = URLLength - JSON.toString(d).length - 10,
+                len = URLLength - $JSON.toString(d).length - 10,
                 arr = [];
             while(data.htmlError.length>0){
-                if(encodeURIComponent(JSON.toString(arr.concat(data.htmlError[0]))).length < len){
+                if(encodeURIComponent($JSON.toString(arr.concat(data.htmlError[0]))).length < len){
                     arr.push(data.htmlError.shift());
                 }else{
                     if(arr.length > 0){
@@ -312,13 +326,13 @@ window.monitor || (function(){
                         d.htmlError = data.htmlError.shift();
                         d.htmlError.msg = d.htmlError.msg.substring(0,100);
                     }
-                    send(M.server, JSON.toString(d));
+                    send(M.server, $JSON.toString(d));
                     arr.length = 0;
                 }
             }
             if(arr.length){
                 d.htmlError = arr;
-                send(M.server, JSON.toString(d));
+                send(M.server, $JSON.toString(d));
             }
         }else{
             for(var k in data){
@@ -326,13 +340,14 @@ window.monitor || (function(){
                     d[k] = data[k];
                 }
             }
-            var s = JSON.toString(d);
+            var s = $JSON.toString(d);
             send(M.server, s);
         }
     }
 
     // JSniffer.
     window.onerror = function(msg, file, line){
+        return;
         var d = {
             jsError: {
                 file: window.monitor.URI.path(file),
@@ -388,15 +403,13 @@ window.monitor || (function(){
         document.documentElement.appendChild(script);
     };
 
-    (function(){
-        var ss = document.getElementsByTagName("script"),
-            script = ss[ss.length - 1];
+    (function(script){
         M.base = M.URI.folder(script.src);
 
         var src = script.getAttribute("src"),
             idx = src.indexOf("?");
         M.version = idx<0?"":src.substr(idx);
-    })();
+    })(_script);
 
     DOM.ready(function(){
         M.readyTime = new Date() - startTime;

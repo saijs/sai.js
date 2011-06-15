@@ -736,13 +736,21 @@
                 log("html", node.startLine, node.startTag, "inline css.",
                     errorCodes.inlineCSS);
             }
-            // <p>
+            // <p>, <pre>
             if(!context.ps.empty() || !context.pres.empty()){
                 if(!inline[node.tagName]){
                     log("html", node.startLine, "p>"+node.startTag,
                         "p > inline element.", errorCodes.tagsIllegal,
                         errorCodes.tagsNestedIllegal);
                 }
+            }
+            // inline > block
+            var tag = node.tagName,
+                ptag = node.parentNode.tagName;
+            // Note: !inline, do not use block.
+            if(inline[ptag] && !block[ptag] && block[tag] && !inline[tag]){
+                log("html", node.startLine, ptag+">"+tag+": "+node.startTag,
+                    "inline>block.", errorCodes.tagsNestedIllegal);
             }
         },
         "!DOCTYPE": function(node){
