@@ -48,7 +48,7 @@ window.monitor || (function(){
         //      .sit.alipay.net
         domain: ".sit.alipay.net",
 
-        checkProtocol: "https:" == location.protocol,
+        checkProtocol: true || "https:" == location.protocol,
 
         // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
         // 这个一般设置为 true 就好了。
@@ -115,7 +115,7 @@ window.monitor || (function(){
     };
     var $JSON = {
         escape: function(str){
-            return str.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
+            return str.replace(/\r|\n/g, '').replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
         },
         toString: function(obj){
             // XXX: 受 https://img.alipay.com/assets/j/sys/ad_customize.js 影响。
@@ -172,7 +172,8 @@ window.monitor || (function(){
         reProtocol:/^\w+:/,
         parse: function(uri){
             if(undefined === uri || typeof(uri)!="string"){
-                throw new TypeError("required string argument.");
+                return "";
+                //throw new TypeError("required string argument.");
             }
             var host = location.protocol + "\/\/" + location.hostname,
                 base = host + location.pathname.replace(M.URI.reFolderExt, uri);
@@ -249,6 +250,7 @@ window.monitor || (function(){
     };
     var URLLength = M.Browser.ie ? 2083 : 8190;
 
+    /*
     function abort(img){
         try{
             // @see http://stackoverflow.com/questions/930237/javascript-cancel-stop-image-requests
@@ -268,32 +270,35 @@ window.monitor || (function(){
         img.src = null;
         img.completed = true;
         img = null;
-    };
+    };*/
     function send(url, data){
         if(!data){return;}
+        var d = encodeURIComponent(data);
         if(M.debug && window.console && window.console.log){
-            window.console.log("SEND: ", data.length, data);
+            window.console.log("SEND: ", d.length, data);
         }
         if(location.hostname.indexOf(M.domain)<0){return;}
-        data = encodeURIComponent(data);
-        var url = url+(url.indexOf("?")<0 ?"?":"&")+data;
-        var times=0; // re-try times, eg: 3.
+        var url = url+(url.indexOf("?")<0 ?"?":"&")+d;
 
         // @see http://www.javascriptkit.com/jsref/image.shtml
         var img = new Image(1,1);
+        /*
         function clearImage(){
             window.clearTimeout(timer);
             timer = null;
+            // 原生 img.complete 在 onerror 时，各浏览器不一致【只读】。
             img.completed = true;
             img = null;
         }
         img.onload = clearImage;
         img.onerror = clearImage;
         img.onabort = clearImage;
+        abort loading image.
         var timer = window.setTimeout(function(){
             if(!img || img.completed){return;}
             abort(img);
         }, M.timeout);
+        */
 
         img.src = url;
     };
@@ -313,7 +318,7 @@ window.monitor || (function(){
         if(data.hasOwnProperty("htmlError")){
             var list = [],
                 s = "",
-                len = URLLength - $JSON.toString(d).length - 10,
+                len = URLLength - $JSON.toString(d).length - 100,
                 arr = [];
             while(data.htmlError.length>0){
                 if(encodeURIComponent($JSON.toString(arr.concat(data.htmlError[0]))).length < len){
@@ -347,7 +352,6 @@ window.monitor || (function(){
 
     // JSniffer.
     window.onerror = function(msg, file, line){
-        return;
         var d = {
             jsError: {
                 file: window.monitor.URI.path(file),
@@ -365,7 +369,7 @@ window.monitor || (function(){
             /* Internet Explorer */
             /*@cc_on
             @if (@_win32 || @_win64)
-                document.write('<script id="ieScriptLoad" defer="defer" src="//:"><\/script>');
+                document.write('<script id="ieScriptLoad" defer="defer" src="javascript:\'\'"><\/script>');
                 document.getElementById("ieScriptLoad").onreadystatechange = function(){
                     if(this.readyState == 'complete'){
                         callback();

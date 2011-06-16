@@ -576,8 +576,8 @@
     function validateFrames(node){
         var src = node.getAttribute("src"),
             uri = URI.parse(src);
-        if(checkProtocol && ("https:" != uri.protocol ||
-          re_empty_uri.test(src))){
+        if(checkProtocol && ("https:" != uri.protocol &&
+          !re_empty_uri.test(src))){
             log("html", node.startLine, node.startTag, "protocol illegal.",
                 errorCodes.protocolIllegal);
         }
@@ -679,7 +679,7 @@
             for(var i=0,l=node.childNodes.length; i<l; i++){
                 if("tr"!=node.childNodes[i].tagName){
                     log("html", node.startLine, node.startTag,
-                        tag+">"+childNodes[i].tagName);
+                        tag+">"+node.childNodes[i].tagName);
                 }
             }
         }

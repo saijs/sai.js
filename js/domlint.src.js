@@ -137,8 +137,8 @@
     function validateFrames(node){
         var src = node.getAttribute("src"),
             uri = URI.parse(src);
-        if(checkProtocol && ("https:" != uri.protocol ||
-          re_empty_uri.test(src))){
+        if(checkProtocol && ("https:" != uri.protocol &&
+          !re_empty_uri.test(src))){
             log("html", 0, D.wrapHTML(node), "protocol illegal.",
                 errorCodes.protocolIllegal);
         }
@@ -167,7 +167,7 @@
             }
         }
         if(D.hasAttr(node, "id")){
-            id = node.getAttribute("id");
+            var id = node.getAttribute("id");
             if("id"==id || "submit"==id){
                 log("html", 0, html, "id不合法。",
                     errorCodes.formElementNameIllegal);
@@ -233,19 +233,19 @@
     }
     // validate <thead>, <tbody>, <tfoot>, <caption>, <colgroup>, <col>.
     function validateTables(node){
-        var ptag = node.parentNode.tagName;
+        var ptag = node.parentNode.tagName,
+            tag = node.tagName;
         if("TABLE"!=ptag){
             log("html", 0, D.wrapHTML(node),
                 ptag+">"+node.tagName, errorCodes.tagsNestedIllegal);
         }
         // validate childNodes for thead, tbody, tfoot.
-        var tag = node.tagName;
         if("THEAD"==tag || "TBODY"==tag || "TFOOT"==tag){
             for(var i=0,l=node.childNodes.length; i<l; i++){
                 if(node.childNodes[i].nodeType != 1){continue;}
-                if("TR"!=node.childNodes[i].tagName){
+                if("TR" != node.childNodes[i].tagName){
                     log("html", 0, D.wrapHTML(node),
-                        tag+">"+childNodes[i].tagName);
+                        tag+">"+node.childNodes[i].tagName);
                 }
             }
         }
@@ -267,7 +267,7 @@
             if(1 != node.nodeType){return;}
             // cache elements ids for label test.
             if(D.hasAttr(node, "id")){
-                id = node.getAttribute("id");
+                var id = node.getAttribute("id");
                 if(re_empty.test(id)){
                     log("html", 0, D.wrapHTML(node),
                         node.tagName+"[id=]", errorCodes.attrIllegal);
@@ -343,21 +343,26 @@
             counter.heads++;
             context.heads.push(node);
             // check the document.charset
-            var charsetIllegal = true,
-                meta = D.firstChild(node);
             // 在DOMReady时，任何浏览器都会有且仅有一个html,head,body标签，不多不少。
             // 对于IE，浏览器无论如何都会设置一个title，并将title放置是head的第一位。
             // 所以针对IE的charset检测是不准确的。
             // document.charset
             if(M.Browser.ie){return;}
-            if(meta && "META"!=meta.tagName &&
-              (D.hasAttr(meta, "charset") ||
-                (D.hasAttr(meta, "http-equiv") &&
-                meta.getAttribute("http-equiv").toLowerCase()=="content-type" &&
-                D.hasAttr(meta, "content") &&
-                meta.getAttribute("content").indexOf("charset")>=0)
-              )
-            ){
+            var meta = D.firstChild(node),
+                illegal = true;
+            if(meta || "META"==meta.tagName){
+                if(D.hasAttr(meta, "charset")){
+                    illegal = false;
+                }else if(D.hasAttr(meta, "http-equiv") &&
+                    meta.getAttribute("http-equiv").toLowerCase()=="content-type" &&
+                    D.hasAttr(meta, "content") &&
+                    meta.getAttribute("content").indexOf("charset")>=0){
+                        illegal = false;
+                }
+            }else{
+                illegal = true;
+            }
+            if(illegal){
                 log("html", 0, "document charset illegal.",
                     "document charset illegal.", errorCodes.charsetIllegal);
             }
@@ -708,7 +713,7 @@
                 "duplicate id.", errorCodes.attrIllegal,
                 errorCodes.idDuplicated);
         }
-        if(!M.Browser.ie){return;}
+        if(M.Browser.ie){return;}
         if(counter.titles < 1){
             log("html", 0, "missing title.", "missing title.", errorCodes.tagsIllegal);
         }else if(counter.titles > 1){
