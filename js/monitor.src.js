@@ -35,10 +35,10 @@ window.monitor || (function(){
         // 3. 启用 CSSLint.
         debug: !(location.protocol=="https:" &&
             location.hostname.indexOf(".alipay.com")>0) ||
-            "#debug"==location.hash || true,
+            "#debug"==location.hash || false,
 
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
-        nocache: true,
+        nocache: false,
 
         // XXX: 发布时需修改服务器地址。
         server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
@@ -48,7 +48,7 @@ window.monitor || (function(){
         //      .sit.alipay.net
         domain: ".sit.alipay.net",
 
-        checkProtocol: true || "https:" == location.protocol,
+        checkProtocol: "https:" == location.protocol,
 
         // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
         // 这个一般设置为 true 就好了。
