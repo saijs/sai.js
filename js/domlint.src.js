@@ -50,11 +50,10 @@
         },
         outerHTML:function(node){
             return node.outerHTML || (function(n){
-                var parent = n.parentNode;
-                var el = document.createElement(parent.tagName);
+                var parent = n.parentNode,
+                    el = document.createElement(parent.tagName);
                 el.appendChild(n.cloneNode(true));
-                var shtml = el.innerHTML;
-                return shtml;
+                return el.innerHTML;
             })(node);
             //return node.outerHTML || new XMLSerializer().serializeToString(node);
         },
@@ -198,7 +197,7 @@
 
         if(D.hasAttr(node, "type")){
             // XXX: 表单不允许有多个 submit?
-            //type = node.getAttribute("type").toLowerCase();
+            //var type = node.getAttribute("type").toLowerCase();
             //if(type=="submit" && (++counter.submits > 1)){
                 //log("html", 0, html,
                     //"too much more submit buttons.",
@@ -440,9 +439,9 @@
             var type = node.getAttribute("type"),
                 rel = node.getAttribute("rel"),
                 href = node.getAttribute("href"),
-                uri = URI.parse(node.getAttribute("href"));
+                uri = URI.parse(href);
             // link 标签的嵌套。
-            //tag = node.parentNode.tagName;
+            //var tag = node.parentNode.tagName;
             //if("HEAD" != tag){
                 //log("html", 0, tag+">"+D.wrapHTML(node),
                     //"tags nested error.", errorCodes.tagsIllegal,
@@ -675,7 +674,7 @@
             var href = node.getAttribute("href");
             if(href.indexOf("#")==0){return;}
             if(/javascript:void(0);?/.test(href)){return;}
-            var uri = URI.parse(node.getAttribute("href"));
+            var uri = URI.parse(href);
             if((!debug && uri.hostname.indexOf(".alipay.net")>0) ||
                 0==uri.hostname.indexOf("localhost") ||
                 0==href.indexOf("$")){ // href="$xxServer.getURI('...')"
@@ -748,6 +747,7 @@
             }
         }
 
+        var nodeSelf = node;
         node = node.firstChild;
         while (node) {
             walk(node, enter, leave);
@@ -756,10 +756,10 @@
 
         if(leave){
             if(leave.hasOwnProperty(tagName) && "function"==typeof(leave[tagName])){
-                leave[tagName](node);
+                leave[tagName](nodeSelf);
             }
             if(leave.hasOwnProperty("*") && "function"==typeof(leave["*"])){
-                leave["*"](node);
+                leave["*"](nodeSelf);
             }
         }
     }
