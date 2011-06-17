@@ -156,9 +156,11 @@
                 res: dom.res,
                 htmlSize: dom.htmlSize
             });
-            M.report({
-                htmlError: dom.htmlErr
-            });
+            if(dom.htmlErr && dom.htmlErr.length>0){
+                M.report({
+                    htmlError: dom.htmlErr
+                });
+            }
         }
         if(M.debug && "undefined"!=typeof(M.HTMLint)){
             // Note: 目前要求 window.monitor.url 是不带 search & hash 的部分。
