@@ -40,11 +40,16 @@
     // DOM
     var D = {
         hasAttr: function(elem, attr){
-            if(!elem || 8==elem.nodeType || 9==elem.nodeType){
+            if(!elem || 1!=elem.nodeType){
                 return false;
             }
             if(elem.hasAttribute){
                 return elem.hasAttribute(attr);
+            }
+            // for IE, not perfect.
+            // @see http://www.patmullin.com/weblog/2006/04/06/getattributestyle-setattributestyle-ie-dont-mix/
+            if("style" == attr){
+                return "" !== elem.style.cssText;
             }
             return null!=elem.getAttribute(attr);
         },
@@ -318,7 +323,7 @@
             var bg = getStyle(node, "background-image");
             if(!!bg && "none"!=bg){
                 bg = bg.replace(re_css_bg_img, "$2");
-                if(!css_bg_img_cache.hasOwnProperty(bg)){
+                if(M.URI.isExternalRes(bg) && !css_bg_img_cache.hasOwnProperty(bg)){
                     res.img.push(bg);
                     css_bg_img_cache[bg] = true;
                 }
@@ -428,6 +433,7 @@
             }
             // resources.
             uri = URI.path(src);
+            if(!M.URI.isExternalRes(uri)){return;}
             res.js.push(uri);
             if(res_cache.js.hasOwnProperty(uri)){
                 res_cache.js[uri]++;
@@ -471,6 +477,7 @@
             }
             // resources.
             uri = URI.path(href);
+            if(!M.URI.isExternalRes(uri)){return;}
             res.css.push(uri);
             if(res_cache.css.hasOwnProperty(uri)){
                 res_cache.css[uri]++;
@@ -514,6 +521,7 @@
                     "missing "+attrs.join(), errorCodes.attrIllegal);
             }
             uri = URI.path(src);
+            if(!M.URI.isExternalRes(uri)){return;}
             res.img.push(uri);
             if(res_cache.img.hasOwnProperty(uri)){
                 res_cache.img[uri]++;
@@ -552,6 +560,7 @@
                         "protocol illegal.", errorCodes.protocolIllegal);
                 }
                 uri = URI.path(src);
+                if(!M.URI.isExternalRes(uri)){return;}
                 res.fla.push(uri);
                 if(res_cache.fla.hasOwnProperty(uri)){
                     res_cache.fla[uri]++;
@@ -579,6 +588,7 @@
                     errorCodes.protocolIllegal);
             }
             uri = URI.path(src);
+            if(!M.URI.isExternalRes(uri)){return;}
             res.fla.push(uri);
             if(res_cache.fla.hasOwnProperty(uri)){
                 res_cache.fla[uri]++;
@@ -736,7 +746,6 @@
         default:
             return;
         }
-
 
         if(enter){
             if(enter.hasOwnProperty("*") && "function"==typeof(enter["*"])){
