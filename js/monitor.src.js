@@ -390,7 +390,6 @@ window.monitor || (function(){
         if(data.hasOwnProperty("htmlError")){
             var list = part(data.htmlError, URLLength - $JSON.toString(d).length - 100);
             (function timedSend(arr){
-                //alert(arr.length)
                 d.htmlError = arr;
                 send(M.server, $JSON.toString(d), function(){
                     if(list.length < 1){return;}
@@ -431,10 +430,34 @@ window.monitor || (function(){
         // http://code.google.com/p/domready/
         // @param {Function} DOM Ready 时的回调函数。
         ready: function(callback){
+            // @see https://developer.mozilla.org/en/DOM/document.readyState
+            // http://stackoverflow.com/questions/1526544/document-readystate-analog-for-gecko-based-browsers
+            // http://www.w3schools.com/jsref/prop_doc_readystate.asp
+            // http://www.cnblogs.com/ryb/archive/2006/03/29/361510.aspx
+            // http://msdn.microsoft.com/en-us/library/ms534359(v=vs.85).aspx
+            //
+            // http://permalink.gmane.org/gmane.comp.web.dojo.devel/15028
+            // Google Chrome 的 DOMContentLoaded 会在 DOMReady 之前发生。
+            //
+            // document.createElement("script") 的方式 load 脚本，
+            // 在 Google Chrome 中，被 load 的脚本内部
+            // document.readyState=="interactive"
+            // 此时绑定 DOMContentLoaded 事件不会被触发。
+            switch(document.readyState){
+            case 'complete':
+            case 'loaded':
+                callback();
+                return;
+            case 'interactive':
+                window.setTimeout(callback, 0);
+                return;
+            default:
+            }
             /* Internet Explorer */
+            // @see http://www.zachleat.com/web/domcontentloaded-inconsistencies/
             if(!!window.ActiveXObject){
-                var timer = setInterval(function () {
-                    try {
+                var timer = setInterval(function(){
+                    try{
                         document.body.doScroll('left');
                         clearInterval(timer); timer = null;
                         callback();
@@ -443,6 +466,7 @@ window.monitor || (function(){
                 return;
             }
             /* Mozilla, Chrome, Opera */
+            // @see https://developer.mozilla.org/en/Gecko-Specific_DOM_Events
             if(document.addEventListener){
                 document.addEventListener("DOMContentLoaded", callback, false);
                 return;
@@ -452,7 +476,7 @@ window.monitor || (function(){
                 var timer = window.setInterval(function(){
                     if(/loaded|complete/i.test(document.readyState)){
                         callback();
-                        clearInterval(timer);
+                        clearInterval(timer); timer = null;
                     }
                 }, 10);
                 return;
@@ -471,7 +495,10 @@ window.monitor || (function(){
         script.setAttribute("type", "text/javascript");
         script.setAttribute("charset", "utf-8");
         script.setAttribute("src", src);
-        document.documentElement.appendChild(script);
+        var hd = document.getElementsByTagName("head");
+        if(hd && head.length>0){hd = hd[0];}
+        hd = hd && hd.length>0 ? hd[0] : document.documentElement;
+        hd.appendChild(script);
     };
 
     (function(script){
