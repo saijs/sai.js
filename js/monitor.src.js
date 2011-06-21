@@ -13,8 +13,10 @@ window.monitor || (function(){
 
     // XXX: 发布时改成 /monitor.js
     // monitor script seed name.
-    var monitorSeedName = "/monitor.src.js";
-    //var monitorFileName = "/monitor.js";
+    var monitorSeedName = "/monitor.js";
+    //var monitorSeedName = "/monitor.js";
+    // 监控脚本的主体部分。
+    var monitorFileName = "monitor_b.js";
 
     var monitorSeedScript = (function(){
         var ss = document.getElementsByTagName("script"),
@@ -489,7 +491,7 @@ window.monitor || (function(){
                 //jsLoader(M.base+"domlint.src.js"+M.version);
                 //jsLoader(M.base+"monitor-b.src.js"+M.version);
             //}else{
-                jsLoader(M.base+"monitor-b.js"+M.version);
+                jsLoader(M.base+monitorFileName+M.version);
             //}
             }catch(ex){}
         }, M.delay);
