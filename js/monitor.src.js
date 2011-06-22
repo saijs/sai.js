@@ -16,7 +16,7 @@ window.monitor || (function(){
     var monitorSeedName = "/monitor.js";
     //var monitorSeedName = "/monitor.js";
     // 监控脚本的主体部分。
-    var monitorFileName = "monitor_b.js";
+    var monitorFileName = "monitor-b.js";
 
     var monitorSeedScript = (function(){
         var ss = document.getElementsByTagName("script"),
@@ -29,6 +29,7 @@ window.monitor || (function(){
         }
         return script;
     })();
+    if(!monitorSeedScript){return;}
 
     // 以指定的概率执行监控脚本。
     // 1:100
@@ -47,15 +48,16 @@ window.monitor || (function(){
         // 1. 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
         // 2. 启用 HTMLint.
         // 3. 启用 CSSLint.
-        debug: location.hostname.indexOf(".alipay.com")<0 ||
+        debug: (location.hostname.indexOf(".alipay.com")<0 &&
+            location.hostname.indexOf(".alipay.net")<0) ||
             "#debug"==location.hash || false,
 
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
         nocache: false,
 
         // XXX: 发布时需修改服务器地址。
-        server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
-        //server: "http:\/\/free-92-208.alipay.net:7788\/m.gif",
+        //server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
+        server: "http:\/\/free-92-208.alipay.net:7788\/m.gif",
 
         // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
         //           .alipay.com
@@ -224,7 +226,7 @@ window.monitor || (function(){
             if(idx >= 0){return uri.substr(0, idx);}
 
             do{
-                idx = uri.indexOf("?", idx);alert(idx);
+                idx = uri.indexOf("?", idx);
                 if(idx < 0){break;}
                 if("?" == uri.charAt(idx+1)){
                     idx += 2;
@@ -503,7 +505,7 @@ window.monitor || (function(){
         script.setAttribute("charset", "utf-8");
         script.setAttribute("src", src);
         var hd = document.getElementsByTagName("head");
-        if(hd && head.length>0){hd = hd[0];}
+        if(hd && hd.length>0){hd = hd[0];}
         hd = hd && hd.length>0 ? hd[0] : document.documentElement;
         hd.appendChild(script);
     };
