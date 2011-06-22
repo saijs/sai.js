@@ -671,7 +671,8 @@
         var ptag = node.parentNode.tagName;
         if("table"!=ptag){
             log("html", node.startLine, node.startTag,
-                ptag+">"+node.tagName, errorCodes.tagsNestedIllegal);
+                ptag+">"+node.tagName, errorCodes.tagsIllegal,
+                errorCodes.tagsNestedIllegal);
         }
         // validate childNodes for thead, tbody, tfoot.
         var tag = node.tagName;
@@ -750,7 +751,8 @@
             // Note: !inline, do not use block.
             if(inline[ptag] && !block[ptag] && block[tag] && !inline[tag]){
                 log("html", node.startLine, ptag+">"+tag+": "+node.startTag,
-                    "inline>block.", errorCodes.tagsNestedIllegal);
+                    "inline>block.", errorCodes.tagsIllegal,
+                    errorCodes.tagsNestedIllegal);
             }
         },
         "!DOCTYPE": function(node){
@@ -1022,7 +1024,8 @@
                 if("thead"!=tag && "tbody"!=tag && "tfoot"!=tag && "tr"!=tag ||
                   "caption"!=tag || "colgroup"!=tag || "col"!=tag){
                     log("html", node.startLine, node.startTag,
-                        "table>"+tag, errorCodes.tagsNestedIllegal);
+                        "table>"+tag, errorCodes.tagsIllegal,
+                        errorCodes.tagsNestedIllegal);
                 }
             }
         },
@@ -1036,13 +1039,14 @@
             var tag = node.parentNode.tagName;
             if("table"!=tag && "thead"!=tag && "tbody"!=tag && "tfoot"!=tag){
                 log("html", node.startLine, node.startTag,
-                    tag+">"+node.tagName, errorCodes.tagsNestedIllegal);
+                    tag+">"+node.tagName, errorCodes.tagsIllegal,
+                    errorCodes.tagsNestedIllegal);
             }
             for(var i=0,l=node.childNodes.length; i<l; i++){
                 if("td" != node.childNodes[i].tagName){
                     log("html", node.startLine, node.startTag,
                         node.tagName+">"+node.childNodes[i].tagName,
-                        errorCodes.tagsNestedIllegal);
+                        errorCodes.tagsIllegal, errorCodes.tagsNestedIllegal);
                 }
             }
         },
