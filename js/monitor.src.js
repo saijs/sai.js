@@ -220,13 +220,20 @@ window.monitor || (function(){
         // @param {String} uri, 仅处理绝对路径。
         // @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
         path: function(uri){
-			var idx = uri.indexOf(";jsessionid=");
+            var idx = uri.indexOf(";jsessionid=");
             if(idx >= 0){return uri.substr(0, idx);}
 
-			idx = uri.indexOf("?");
-            if(idx >= 0){return uri.substr(0, idx);}
+            do{
+                idx = uri.indexOf("?", idx);alert(idx);
+                if(idx < 0){break;}
+                if("?" == uri.charAt(idx+1)){
+                    idx += 2;
+                }else{
+                    break;
+                }
+            }while(idx >= 0);
 
-			return uri;
+            return idx < 0 ? uri : uri.substr(0, idx);
         },
         // 获取指定 uri 指向文件所在的目录。
         // @param {String} uri
