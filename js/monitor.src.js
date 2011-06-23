@@ -5,15 +5,14 @@
  * @version v1.2.5, 2011/06/20
  */
 
-
-// Quality Monitoring System.
-
 // namespace.
-window.monitor || (function(){
+!window.monitor || (function(){
+
+    var M = window.monitor;
 
     // XXX: 发布时改成 /monitor.js
     // monitor script seed name.
-    var monitorSeedName = "/monitor.js";
+    var monitorSeedName = "/monitor.src.js";
     //var monitorSeedName = "/monitor.js";
     // 监控脚本的主体部分。
     var monitorFileName = "monitor-b.js";
@@ -40,42 +39,39 @@ window.monitor || (function(){
 
     var startTime = new Date();
 
-    var M = window.monitor = {
-        // XXX: 发布时建议设置为 false。
-        // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
-        //
-        // 非调试模式：
-        // 1. 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
-        // 2. 启用 HTMLint.
-        // 3. 启用 CSSLint.
-        debug: (location.hostname.indexOf(".alipay.com")<0 &&
-            location.hostname.indexOf(".alipay.net")<0) ||
-            "#debug"==location.hash || false,
+    // XXX: 发布时建议设置为 false。
+    // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
+    //
+    // 非调试模式：
+    // 1. 避免 AJAX 缓存(HTML源码，JavaScript、CSS、IMAGE 资源)
+    // 2. 启用 HTMLint.
+    // 3. 启用 CSSLint.
+    M.debug = location.hostname.indexOf(".alipay.com")<0 ||
+        "#debug"==location.hash || false;
 
-        // XXX: 添加随机数避免缓存，发布时建议设置为 false。
-        nocache: false,
+    // XXX: 添加随机数避免缓存，发布时建议设置为 false。
+    M.nocache = false;
 
-        // XXX: 发布时需修改服务器地址。
-        //server: "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif",
-        server: "http:\/\/free-92-208.alipay.net:7788\/m.gif",
+    // XXX: 发布时需修改服务器地址。
+    //M.server = "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif";
+    M.server = "http:\/\/free-92-208.alipay.net:7788\/m.gif";
 
-        // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
-        //           .alipay.com
-        //       .sit.alipay.net
-        domain: ".sit.alipay.net",
+    // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
+    //           .alipay.com
+    //       .sit.alipay.net
+    M.domain = ".sit.alipay.net";
 
-        checkProtocol: "https:" == location.protocol,
+    M.checkProtocol = "https:" == location.protocol;
 
-        // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
-        // 这个一般设置为 true 就好了。
-        rethrow: true,
-        // DOMReady 并延迟毫秒数之后开始运行(HTML,CSS,JAVASCRIPT)规则验证。
-        delay: 1800,
-        // report request timeout.
-        timeout: 2000,
-        // userAgent.
-        ua: navigator.userAgent
-    };
+    // 捕获 JavaScript 异常时重新抛出，避免浏览器控制台无法捕获异常。
+    // 这个一般设置为 true 就好了。
+    M.rethrow = true;
+    // DOMReady 并延迟毫秒数之后开始运行(HTML,CSS,JAVASCRIPT)规则验证。
+    M.delay = 1800;
+    // report request timeout.
+    M.timeout = 2000;
+    // userAgent.
+    M.ua = navigator.userAgent;
 
     // page url, without search & hash.
     var idx = location.pathname.indexOf(";jsessionid=");
@@ -97,11 +93,11 @@ window.monitor || (function(){
         // 属性不合法。
         attrIllegal: 4,
             // 存在重复 ID。
-            idDuplicated: 40,
+            idDuplicated: 400,
             // 缺少 rel 属性，或 rel 属性不合法
-            relIllegal: 41,
+            relIllegal: 401,
             // 链接缺少 href 属性，或 href 指向不合法。
-            hrefIllegal: 42,
+            hrefIllegal: 402,
 
         // 内联 JavaScript 脚本。
         inlineJS: 5,
@@ -112,16 +108,16 @@ window.monitor || (function(){
         // 标签未结束等语法错误。。。
         tagsIllegal: 7,
             // 标签嵌套不合法。
-            tagsNestedIllegal: 70,
+            tagsNestedIllegal: 700,
             // 过时的标签。
-            tagsDeprecated: 71,
+            tagsDeprecated: 701,
             // 标签未闭合，例如自闭合，或者非法闭合的标签。
-            tagUnclosed: 72,
+            tagUnclosed: 702,
 
         commentIllegal: 8,
 
         cssIllegal: 9,
-            cssByImport: 90
+            cssByImport: 900
     };
     M.res = {
         img:[],
@@ -219,6 +215,11 @@ window.monitor || (function(){
         isExternalRes: function(uri){
             return 0==uri.indexOf("http:\/\/") || 0==uri.indexOf("https:\/\/");
         },
+        // 获得资源的路径（不带参数和 hash 部分）
+        // 另外新版 Arale 通过 nginx 提供的服务，支持类似：
+        // > https://static.alipay.com/ar??arale.js
+        // 的方式方式资源，需要特殊处理。
+        //
         // @param {String} uri, 仅处理绝对路径。
         // @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
         path: function(uri){
@@ -300,6 +301,12 @@ window.monitor || (function(){
 
     // 取消数据请求发送，基于浏览器兼容性及当前解决方案停止整个页面资源请求
     // 的危险性，决定取消使用这个方案。
+    //
+    // http://stackoverflow.com/questions/930237/javascript-cancel-stop-image-requests
+    // http://www.sysopt.com/forum/archive/index.php/t-177147.html
+    // http://stackoverflow.com/questions/1671717/javascript-image-onabort-event-not-firing-in-firefox-chrome
+    // http://stackoverflow.com/questions/4506160/abort-active-image-requests
+    // http://www.devguru.com/technologies/ecmascript/quickref/image.html
     /*
     function abort(img){
         try{
@@ -318,7 +325,6 @@ window.monitor || (function(){
             }
         }catch(ex){}
         img.src = null;
-        img.completed = true;
         img = null;
     };*/
     // 创建图片请求发送数据。
@@ -339,21 +345,16 @@ window.monitor || (function(){
         // @see http://www.javascriptkit.com/jsref/image.shtml
         var img = new Image(1,1);
 
-        //function clearImage(){
-            //window.clearTimeout(timer);
-            //timer = null;
-            // // 原生 img.complete 在 onerror 时，各浏览器不一致【只读】。
-            //img.completed = true;
-            //img = null;
-        //}
-        img.onload = callback;
-        img.onerror = callback;
-        img.onabort = callback;
-        //abort loading image.
-        //var timer = window.setTimeout(function(){
-            //if(!img || img.completed){return;}
-            //abort(img);
-        //}, M.timeout);
+        // 原生 img.complete [只读]，在 onerror 时(甚至之后一直)，
+        // IE: false.
+        // Others: true.
+        function clearImage(){
+            callback();
+            img.onload = img.onerror = img.onabort = null;
+            img = null;
+        }
+
+        img.onload = img.onerror = img.onabort = clearImage;
 
         img.src = url;
         }catch(ex){
@@ -385,50 +386,17 @@ window.monitor || (function(){
     // @param {Object} data, 参考与后端沟通的数据发送格式规格。
     M.report = function(data){
         if(!data){return;}
-        var d = {
-                url: M.url,
-                ua: M.ua,
-                // 分批发送数据的批次标识。
-                id: identify(),
-                // 避免缓存。
-                rand: M.S.rand()
-            };
-
-        // TODO: 如果初始数据本身就超了，呃，算了。
 
         if(data.hasOwnProperty("htmlError")){
-            var list = part(data.htmlError, URLLength - $JSON.toString(d).length - 100);
-            (function timedSend(arr){
-                d.htmlError = arr;
-                send(M.server, $JSON.toString(d), function(){
-                    if(list.length < 1){return;}
-                    timedSend(list.shift());
-                })
-            })(list.shift());
+            var list = part(data.htmlError, URLLength - $JSON.toString(DATA).length - 150);
+            for(var i=0,l=list.length; i<l; i++){
+                M.errors.push({htmlError: list[i]});
+            }
         }else{
-            for(var k in data){
-                if(Object.prototype.hasOwnProperty.call(data, k)){
-                    d[k] = data[k];
-                }
-            }
-            var s = $JSON.toString(d);
-            send(M.server, s);
+            M.errors.push(data);
         }
+        //M.errors.timedSend();
     }
-
-    // JSniffer.
-    window.onerror = function(msg, file, line){
-        var d = {
-            jsError: {
-                file: window.monitor.URI.path(file),
-                ln: line,
-                msg: msg//+" | "+F.stack(arguments.callee.caller)+", "+arguments.callee.caller
-            }
-        };
-        M.report(d);
-        // false: re-throw error, true: capture error.
-        return !M.rethrow;
-    };
 
     var DOM = {
         // @see http://www.never-online.net/blog/article.asp?id=230
@@ -518,8 +486,52 @@ window.monitor || (function(){
         M.version = idx<0?"":src.substr(idx);
     })(monitorSeedScript);
 
+    var DATA = {
+            url: M.url,
+            ua: M.ua,
+            // 分批发送数据的批次标识。
+            id: identify(),
+            // 避免缓存。
+            rand: M.S.rand()
+        };
+    // errors queue-list timed send.
+    // TODO: 如果初始数据本身就超了，呃，算了。
+    M.errors.timedSend = function(){
+        if(window.console && window.console.log){window.console.log("TIMED SEND: ", M.errors.d.length, M.errors.sendState);}
+        if(M.errors.sendState == "sending"){return;}
+        var e = M.errors.pop();
+        if(!e){M.errors.sendState="complete"; return;}
+        M.errors.sendState = "sending";
+        if(window.console && window.console.log){window.console.log("sending...");}
+        var DATA = {
+                url: M.url,
+                ua: M.ua,
+                // 分批发送数据的批次标识。
+                id: identify(),
+                // 避免缓存。
+                rand: M.S.rand()
+            };
+
+        for(var k in e){
+            if(Object.prototype.hasOwnProperty.call(e, k)){
+                DATA[k] = e[k];
+            }
+        }
+        send(M.server, $JSON.toString(DATA), function(){
+            M.errors.sendState = "complete";
+            if(window.console && window.console.log){window.console.log("sent!");}
+            window.setTimeout(M.errors.timedSend, 0);
+        });
+    };
+    M.errors.obs(function(){
+        M.errors.timedSend();
+    });
+
     M.Browser.IE6 || DOM.ready(function(){
         M.readyTime = new Date() - startTime;
+        // send all occurred errors.
+        M.errors.timedSend();
+
         window.setTimeout(function(){
             try{
             // XXX: 开发环境避免每次打包，可以取消这里的注释。
