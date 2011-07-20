@@ -37,8 +37,6 @@
         return;
     }
 
-    var startTime = new Date();
-
     // XXX: 发布时建议设置为 false。
     // 发布环境：URL 中带上 "debug" 这个 hash，可以开启调试模式。
     //
@@ -47,14 +45,14 @@
     // 2. 启用 HTMLint.
     // 3. 启用 CSSLint.
     M.debug = location.hostname.indexOf(".alipay.com")<0 ||
-        "#debug"==location.hash || false;
+        "#debug"==location.hash || true;
 
     // XXX: 添加随机数避免缓存，发布时建议设置为 false。
     M.nocache = false;
 
     // XXX: 发布时需修改服务器地址。
-    //M.server = "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif";
-    M.server = "http:\/\/free-92-208.alipay.net:7788\/m.gif";
+    M.server = "http:\/\/fmsmng.sit.alipay.net:7788\/m.gif";
+    //M.server = "http:\/\/free-92-208.alipay.net:7788\/m.gif";
 
     // XXX: 设置监控的对象，域名在此之外的，会做客户端监控报告，但不发往服务器。
     //           .alipay.com
@@ -70,8 +68,6 @@
     M.delay = 1800;
     // report request timeout.
     M.timeout = 2000;
-    // userAgent.
-    M.ua = navigator.userAgent;
 
     // page url, without search & hash.
     var idx = location.pathname.indexOf(";jsessionid=");
@@ -81,43 +77,37 @@
     M.htmlErrorCodes = {
         syntaxError: 0,
 
-        // 缺少DOCTYPE，或DOCTYPE不合法。
-        doctypeIllegal: 1,
+        tagsIllegal: 1, // 标签未结束等语法错误。。。
+            tagUnclosed: 100, // 标签未闭合，例如自闭合，或者非法闭合的标签。
+            tagsDeprecated: 101, // 过时的标签。
+            tagNameUpperCase: 102,
+            tagsNestedIllegal: 103, // 标签嵌套不合法。
+            titleIllegal: 104, // 文档标题不合法。
 
-        // 编码未设置，或编码设置不合法。
-        charsetIllegal: 2,
+        attrIllegal: 2, // 属性不合法。
+            protocolIllegal: 200, // HTTPS 资源中包含不安全资源。
+            inlineJS: 201, // 内联 JavaScript 脚本。
+            inlineCSS: 202, // 内联 CSS 脚本。
+            attrCharsetIllegal: 203, // 编码未设置，或编码设置不合法。
+            attrNameIllegal: 204, // 属性名不合法（大写）
+            attrValueIllegal: 205, // 属性值不合法（为空...）
+            attrNameDuplicated: 206, // 多个同名属性。
+            idDuplicated: 207, // 存在重复 ID。
+            attrMissQuote: 208, // 属性值缺少引号。
+            relIllegal: 209, // 缺少 rel 属性，或 rel 属性不合法
+            altIllegal: 210, // IMG 元素缺少 rel 属性。
+            typeIllegal: 211, // input,button 元素缺少 type 属性。
+            nameIllegal: 212, // input[type!=submit|button|image], textarea, select 缺少 name 属性。
+            labelForIllegal: 213, // label 标签的 for 属性不合法。
+            hrefIllegal: 214, // 链接缺少 href 属性，或 href 指向不合法。
+            flashOpacity: 215, // Flash 的不透明设置。
 
-        // HTTPS 资源中包含不安全资源。
-        protocolIllegal: 3,
-
-        // 属性不合法。
-        attrIllegal: 4,
-            // 存在重复 ID。
-            idDuplicated: 400,
-            // 缺少 rel 属性，或 rel 属性不合法
-            relIllegal: 401,
-            // 链接缺少 href 属性，或 href 指向不合法。
-            hrefIllegal: 402,
-
-        // 内联 JavaScript 脚本。
-        inlineJS: 5,
-
-        // 内联 CSS 脚本。
-        inlineCSS: 6,
-
-        // 标签未结束等语法错误。。。
-        tagsIllegal: 7,
-            // 标签嵌套不合法。
-            tagsNestedIllegal: 700,
-            // 过时的标签。
-            tagsDeprecated: 701,
-            // 标签未闭合，例如自闭合，或者非法闭合的标签。
-            tagUnclosed: 702,
-
-        commentIllegal: 8,
-
-        cssIllegal: 9,
-            cssByImport: 900
+        documentIllegal: 3,
+            doctypeIllegal: 300, // 缺少DOCTYPE，或DOCTYPE不合法。
+            documentCharsetIllegal: 301, // 编码未设置，或编码设置不合法。
+            resDuplicated: 302, // 重复的资源引用。
+            cssByImport: 303,
+            commentIllegal: 304
     };
     M.res = {
         img:[],
@@ -293,40 +283,135 @@
         return n.toString(parseInt(Math.random()*10 + 16));
     }
 
-    M.Browser = {
-        ie: navigator.userAgent.indexOf("MSIE") > 0 && !window.opera,
-        IE6: navigator.userAgent.indexOf("MSIE 6") > 0 && !window.opera
-    };
-    var URLLength = M.Browser.ie ? 2083 : 8190;
-
-    // 取消数据请求发送，基于浏览器兼容性及当前解决方案停止整个页面资源请求
-    // 的危险性，决定取消使用这个方案。
-    //
-    // http://stackoverflow.com/questions/930237/javascript-cancel-stop-image-requests
-    // http://www.sysopt.com/forum/archive/index.php/t-177147.html
-    // http://stackoverflow.com/questions/1671717/javascript-image-onabort-event-not-firing-in-firefox-chrome
-    // http://stackoverflow.com/questions/4506160/abort-active-image-requests
-    // http://www.devguru.com/technologies/ecmascript/quickref/image.html
-    /*
-    function abort(img){
-        try{
-            // @see http://stackoverflow.com/questions/930237/javascript-cancel-stop-image-requests
-            // @see http://stackoverflow.com/questions/3146200/stop-loading-of-images-on-a-hashchange-event-via-javascript-or-jquery
-            //
-            // @see https://developer.mozilla.org/en/DOM/window.stop
-            if(typeof(window.stop) !== "undefined"){
-                window.stop();
-            }else if(typeof(document.execCommand) !== "undefined"){
-                // @see http://msdn.microsoft.com/en-us/library/ms536419%28v=vs.85%29.aspx
-                // @see http://msdn.microsoft.com/en-us/library/ms533049%28v=vs.85%29.aspx
-                // @see https://developer.mozilla.org/En/Document.execCommand
-                document.execCommand("StopImage", false);
-                document.execCommand("Stop", false);
+    // Client Environment Information.
+    M.Env = {
+        init: function () {
+            this.browser = this.searchString(this.dataBrowser) || "Unknown";
+            this.version = this.searchVersion(navigator.userAgent)
+                || this.searchVersion(navigator.appVersion)
+                || "an unknown version";
+            this.OS = this.searchString(this.dataOS) || "an unknown OS";
+        },
+        searchString: function (data) {
+            for (var i=0;i<data.length;i++)	{
+                var dataString = data[i].string;
+                var dataProp = data[i].prop;
+                this.versionSearchString = data[i].versionSearch || data[i].identity;
+                if (dataString) {
+                    if (dataString.indexOf(data[i].subString) != -1)
+                        return data[i].identity;
+                }
+                else if (dataProp)
+                    return data[i].identity;
             }
-        }catch(ex){}
-        img.src = null;
-        img = null;
-    };*/
+        },
+        searchVersion: function (dataString) {
+            var index = dataString.indexOf(this.versionSearchString);
+            if (index == -1) return;
+            return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+        },
+        dataBrowser: [
+            {
+                string: navigator.userAgent,
+                subString: "Chrome",
+                identity: "Chrome"
+            },
+            {
+                string: navigator.userAgent,
+                subString: "OmniWeb",
+                versionSearch: "OmniWeb/",
+                identity: "OmniWeb"
+            },
+            {
+                string: navigator.vendor,
+                subString: "Apple",
+                identity: "Safari",
+                versionSearch: "Version"
+            },
+            {
+                prop: window.opera,
+                identity: "Opera"
+            },
+            {
+                string: navigator.vendor,
+                subString: "iCab",
+                identity: "iCab"
+            },
+            {
+                string: navigator.vendor,
+                subString: "KDE",
+                identity: "Konqueror"
+            },
+            {
+                string: navigator.userAgent,
+                subString: "Firefox",
+                identity: "Firefox"
+            },
+            {
+                string: navigator.vendor,
+                subString: "Camino",
+                identity: "Camino"
+            },
+            {		// for newer Netscapes (6+)
+                string: navigator.userAgent,
+                subString: "Netscape",
+                identity: "Netscape"
+            },
+            {
+                string: navigator.userAgent,
+                subString: "MSIE",
+                identity: "IE",
+                //identity: "Explorer",
+                versionSearch: "MSIE"
+            },
+            {
+                string: navigator.userAgent,
+                subString: "Gecko",
+                identity: "Mozilla",
+                versionSearch: "rv"
+            },
+            { 		// for older Netscapes (4-)
+                string: navigator.userAgent,
+                subString: "Mozilla",
+                identity: "Netscape",
+                versionSearch: "Mozilla"
+            }
+        ],
+        dataOS : [
+            {
+                string: navigator.platform,
+                subString: "Win",
+                identity: "Windows"
+            },
+            {
+                string: navigator.platform,
+                subString: "Mac",
+                identity: "Mac"
+            },
+            {
+                   string: navigator.userAgent,
+                   subString: "iPhone",
+                   identity: "iPhone/iPod"
+            },
+            {
+                string: navigator.platform,
+                subString: "Linux",
+                identity: "Linux"
+            }
+        ]
+
+    };
+    M.Env.init();
+    // userAgent.
+    //M.ua = navigator.userAgent;
+    M.ua = M.Env.OS+","+M.Env.browser+" "+M.Env.version;
+
+    //M.Browser = {
+        //ie: navigator.userAgent.indexOf("MSIE") > 0 && !window.opera,
+        //IE6: navigator.userAgent.indexOf("MSIE 6") > 0 && !window.opera
+    //};
+    var URLLength = M.Env.browser == "IE" ? 2083 : 8190;
+
     // 创建图片请求发送数据。
     function send(url, data, callback){
         if(!callback){callback = function(){};}
@@ -348,15 +433,32 @@
         // 原生 img.complete [只读]，在 onerror 时(甚至之后一直)，
         // IE: false.
         // Others: true.
-        function clearImage(){
+        function clearImage(abort){
+            if(!img.aborted  && !abort){return;}
+            clearTimeout(timer)
+            timer = null;
+
             callback();
+
             img.onload = img.onerror = img.onabort = null;
             img = null;
         }
 
-        img.onload = img.onerror = img.onabort = clearImage;
+        //img.onload = img.onerror = img.onabort = clearImage;
+        img.onload = clearImage;
+        img.onerror = clearImage;
+        img.onabort = clearImage;
 
         img.src = url;
+
+        var timer = window.setTimeout(function(){
+            try{
+                img.aborted = true;
+                img.src = null;
+                clearImage(1);
+            }catch(ex){}
+        }, M.timeout);
+
         }catch(ex){
             // TODO: 资源类分段发送。
             // TODO: 自我异常检测。
@@ -373,7 +475,9 @@
     function part(datas, len){
         var datas=datas.slice(0), list=[[]], idx=0;
         while(datas.length>0){
-            if(encodeURIComponent($JSON.toString(list[idx].concat(datas[0]))).length < len){
+            if(encodeURIComponent(
+                $JSON.toString(list[idx].concat(datas[0]))).length < len){
+
                 list[idx].push(datas.shift());
             }else{
                 list[++idx] = [];
@@ -388,14 +492,15 @@
         if(!data){return;}
 
         if(data.hasOwnProperty("htmlError")){
-            var list = part(data.htmlError, URLLength - $JSON.toString(DATA).length - 150);
+            var list = part(data.htmlError, URLLength -
+                encodeURIComponent($JSON.toString(DATA)).length - 150);
             for(var i=0,l=list.length; i<l; i++){
                 M.errors.push({htmlError: list[i]});
             }
         }else{
             M.errors.push(data);
         }
-        //M.errors.timedSend();
+        M.timedSend();
     }
 
     var DOM = {
@@ -496,12 +601,13 @@
         };
     // errors queue-list timed send.
     // TODO: 如果初始数据本身就超了，呃，算了。
-    M.errors.timedSend = function(){
-        if(window.console && window.console.log){window.console.log("TIMED SEND: ", M.errors.d.length, M.errors.sendState);}
-        if(M.errors.sendState == "sending"){return;}
-        var e = M.errors.pop();
-        if(!e){M.errors.sendState="complete"; return;}
-        M.errors.sendState = "sending";
+    var sendState = "complete";
+    M.timedSend = function(){
+        if(window.console && window.console.log){window.console.log("TIMED SEND: ", M.errors.length, sendState);}
+        if(sendState == "sending"){return;}
+        var e = M.errors.shift();
+        if(!e){sendState="complete"; return;}
+        sendState = "sending";
         if(window.console && window.console.log){window.console.log("sending...");}
         var DATA = {
                 url: M.url,
@@ -518,29 +624,20 @@
             }
         }
         send(M.server, $JSON.toString(DATA), function(){
-            M.errors.sendState = "complete";
+            sendState = "complete";
             if(window.console && window.console.log){window.console.log("sent!");}
-            window.setTimeout(M.errors.timedSend, 0);
+            M.timedSend();
+            //window.setTimeout(M.timedSend, 0);
         });
     };
-    M.errors.obs(function(){
-        M.errors.timedSend();
-    });
 
-    M.Browser.IE6 || DOM.ready(function(){
-        M.readyTime = new Date() - startTime;
-        // send all occurred errors.
-        M.errors.timedSend();
+    (M.Env.browser == "IE" && M.Env.version == 6) || DOM.ready(function(){
+        M.readyTime = new Date() - M.startTime;
 
         window.setTimeout(function(){
             try{
-            // XXX: 开发环境避免每次打包，可以取消这里的注释。
-            //if(M.debug){
-                //jsLoader(M.base+"domlint.src.js"+M.version);
-                //jsLoader(M.base+"monitor-b.src.js"+M.version);
-            //}else{
-                jsLoader(M.base+monitorFileName+M.version);
-            //}
+                // send all occurred errors.
+                M.timedSend();
             }catch(ex){}
         }, M.delay);
     });
