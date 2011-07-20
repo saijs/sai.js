@@ -10,34 +10,11 @@
  */
 window.monitor || (function(){
     var M = window.monitor = {};
-    // queue.
-    var Q = function(){
-        // datas.
-        this.d = [];
-        // event handlers.
-        this.h = [];
-    };
-    Q.prototype = {
-        // push in.
-        push: function(d){
-            this.d.push(d)
-            for(var i=0,l=this.h.length; i<l; i++){
-                this.h[i].call(this);
-            }
-        },
-        // pop out.
-        pop: function(){
-            return this.d.shift();
-        },
-        // event observer.
-        obs: function(h){
-            if("function"!=typeof(h)){return;}
-            this.h.push(h);
-        }
-    }
+
+    M.startTime = new Date();
 
     // 所有异常/错误信息都将 push 到这个队列中，待发送到服务端。
-    M.errors = new Q();
+    M.errors = [];
 
     // JSniffer.
     // @see
@@ -52,7 +29,8 @@ window.monitor || (function(){
     // https://developer.mozilla.org/en/JavaScript/Reference/Statements/try...catch
     window.onerror = function(m,f,l){
         // TODO: new Error().stack;
-        M.errors.push({msg:m, file:f, ln:l});
+        M.errors.push({jsError:{msg:m, file:f, ln:l}});
+        if("function" == typeof M.timedSend){M.timedSend();}
         // false: re-throw error, true: capture error.
         return false;
     }
