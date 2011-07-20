@@ -203,7 +203,8 @@
         // 判断是否外部引用类型的资源。
         // @param {String} uri, 绝对URL地址。
         isExternalRes: function(uri){
-            return 0==uri.indexOf("http:\/\/") || 0==uri.indexOf("https:\/\/");
+            return 0==uri.indexOf("https:") || 0==uri.indexOf("http:") ||
+                0==uri.indexOf("file:");
         },
         // 获得资源的路径（不带参数和 hash 部分）
         // 另外新版 Arale 通过 nginx 提供的服务，支持类似：
