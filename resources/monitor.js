@@ -136,15 +136,15 @@
             scriptBase = "http://dev.assets.alipay.net/ar/??";
             scriptB = ["alipay.fmsmng.monitor-1.0-b.js"];
         }
-        LOG_SERVER = "http://fmsmng.sit.alipay.net:7788\/m.gif";
+        LOG_SERVER = "https://magentmng.sit.alipay.net\/m.gif";
         //M._rate = 0.8;
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
         M.nocache = true;
     }else if(M.S.endsWith(M._loc.hostname, ".sit.alipay.net")){
         mode = MODE.SIT;
-        LOG_SERVER = "http://fmsmng.sit.alipay.net:7788\/m.gif";
+        LOG_SERVER = "https://magentmng.sit.alipay.net\/m.gif";
         //M._rate = 0.8;
-        scriptBase = "http://assets.sit.alipay.net/ar/??";
+        scriptBase = "https://assets.sit.alipay.net/ar/??";
         scriptB = ["alipay.fmsmng.monitor-1.0-b.js"];
 
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
