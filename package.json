@@ -1,0 +1,20 @@
+{
+  "family": "alipay",
+  "name": "monitor",
+  "version": "2.0.0",
+  "description": "支付宝前端监控脚本",
+  "homepage": "https://github.com/totorojs/monitor.js",
+  "author": "",
+  "repository": "git://github.com/totorojs/monitor.js.git",
+  "bugs": "",
+  "keywords": ["widget"],
+  "licenses": "MIT",
+  "spm": {
+    "output": ["monitor.js"],
+    "alias": {},
+    "devAlias": {},
+    "engines": {
+      "seajs": "seajs/seajs/2.0.0/sea.js"
+    }
+  }
+}

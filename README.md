@@ -1,8 +1,33 @@
+# monitor
 
-# monitor.js
+---
 
-前端监控脚本，用于客户端代码质量监控（脚本异常，HTML代码质量），
-资源监控（HTML,JS,CSS,Image,Flash,CMS区域...），性能监控（（性能，执行频次）
-和业务监控（业务代码中的 log 信息）
+支付宝前端监控脚本。
 
-详细信息请参考 [监控系统](http://doc.alipay.net/pages/viewpage.action?pageId=24776860)
+前端监控脚本可以自动收集页面中未捕获的 JavaScript 异常。
+对于已被捕获的异常，可以通过 `monitor.error()` 接口进行监控。
+
+---
+
+## 使用说明
+
+```javascript
+try{
+  throw new Error("msg");
+}catch(ex){
+  monitor.error(ex);
+}
+```
+
+
+## API
+
+### monitor.log(String productLine, String product, String code)
+
+### monitor.error(Error error)
+
+### monitor.time(String profile, Number value)
+
+### monitor.timeStart(String profile)
+
+### monitor.timeEnd(String profile)
