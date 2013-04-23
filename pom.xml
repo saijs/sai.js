@@ -6,7 +6,7 @@
         <version>RELEASE</version>
     </parent>
     <artifactId>alipay.fmsmng.monitor</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
     <name>monitor</name>
     <packaging>js</packaging>
     <description>全站通用前端监控脚本</description>
@@ -14,9 +14,9 @@
         <tags>全站 公共</tags>
     </properties>
     <scm>
-        <connection>scm:svn:http://sources.alipay.net/svn/ueddocs/project/01.Arale/trunk/js/common/alipay/fmsmng/monitor</connection>
-        <developerConnection>scm:svn:http://sources.alipay.net/svn/ueddocs/project/01.Arale/trunk/js/common/alipay/fmsmng/monitor</developerConnection>
-        <url>http://sources.alipay.net/svn/ueddocs/project/01.Arale/trunk/js/common/alipay/fmsmng/monitor</url>
+        <connection>scm:svn:http://sources.alipay.net/svn/ueddocs/project/01.Arale/tags/alipay/alipay.fmsmng.monitor-1.2</connection>
+        <developerConnection>scm:svn:http://sources.alipay.net/svn/ueddocs/project/01.Arale/tags/alipay/alipay.fmsmng.monitor-1.2</developerConnection>
+        <url>http://sources.alipay.net/svn/ueddocs/project/01.Arale/tags/alipay/alipay.fmsmng.monitor-1.2</url>
     </scm>
     <developers>
         <developer>

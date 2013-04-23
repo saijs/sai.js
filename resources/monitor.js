@@ -35,7 +35,7 @@
         readyTime = new Date() - M._startTime,  // DOMReady time.
         loadTime = readyTime * 1.7;             // Page Load time.
 
-    M.version = "1.3";
+    M.version = "1.3.1";
     M._loc = {
         protocol: loc.protocol,
         hostname: loc.hostname,
@@ -121,34 +121,44 @@
         LOG_SERVER = "https://magentmng.alipay.com/m.gif";
         //M._rate = 0.01;
         scriptBase = "https://assets.alipay.com/ar/??";
-        scriptB = ["alipay.fmsmng.monitor-1.0-b.js"];
+        scriptB = ["alipay.fmsmng.monitor-1.1-b.js"];
 
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
         M.nocache = false;
-    }else if(M._loc.hostname=="m.sit.alipay.net"){
+    }else if(M.S.endsWith(M._loc.hostname, ".sit.alipay.net") ||
+        // 移动前端监控：@颂赞。
+        // 移动设备不便于修改 hosts 等原因，同时开启开发环境的监控。
+        // 开发环境：
+        //  http://wapappweb.xxx.alipay.net/
+        // SIT:
+        //  https://wapappweb.sit.alipay.net/
+        //  https://wapappweb.test.alipay.net/
+        // 生产环境：
+        //  https://mapp.alipay.com/
+        /^wapappweb\.[a-zA-Z0-9_-]+\.alipay\.net$/.test(M._loc.hostname)){
+        mode = MODE.SIT;
+        LOG_SERVER = "https://magentmng.sit.alipay.net/m.gif";
+        //M._rate = 0.8;
+        scriptBase = "https://assets.sit.alipay.net/ar/??";
+        scriptB = ["alipay.fmsmng.monitor-1.1-b.js"];
+
+        // XXX: 添加随机数避免缓存，发布时建议设置为 false。
+        M.nocache = false;
+    }else if(M._loc.hostname=="m.loc.alipay.net"){
         if(mode == MODE.LOCAL){
             // LOCAL DEV.
-            scriptBase = "http://m.sit.alipay.net/js/";
+            scriptBase = "http://m.loc.alipay.net/js/";
             scriptB = ["domlint2.js", "monitor-b.src.js"];
         }else{
             // DEV
             mode = MODE.DEV;
             scriptBase = "http://dev.assets.alipay.net/ar/??";
-            scriptB = ["alipay.fmsmng.monitor-1.0-b.js"];
+            scriptB = ["alipay.fmsmng.monitor-1.1-b.js"];
         }
-        LOG_SERVER = "https://magentmng.sit.alipay.net\/m.gif";
+        LOG_SERVER = "https://magentmng.sit.alipay.net/m.gif";
         //M._rate = 0.8;
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
         M.nocache = true;
-    }else if(M.S.endsWith(M._loc.hostname, ".sit.alipay.net")){
-        mode = MODE.SIT;
-        LOG_SERVER = "https://magentmng.sit.alipay.net\/m.gif";
-        //M._rate = 0.8;
-        scriptBase = "https://assets.sit.alipay.net/ar/??";
-        scriptB = ["alipay.fmsmng.monitor-1.0-b.js"];
-
-        // XXX: 添加随机数避免缓存，发布时建议设置为 false。
-        M.nocache = false;
     }else{
         return;
     }
