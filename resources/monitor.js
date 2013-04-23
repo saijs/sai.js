@@ -385,6 +385,8 @@
         }
         var d = encodeURIComponent(data);
         var url = url+(url.indexOf("?")<0 ?"?":"&")+d;
+        // TODO: monitor.log(loc.url, 414)
+        if(url.length > URLLength){return;}
 
         try{
         // @see http://www.javascriptkit.com/jsref/image.shtml
@@ -415,7 +417,8 @@
 
         var timer = window.setTimeout(function(){
             try{
-                img.src = null;
+                //img.src = null;
+                img.removeAttribute("src");
                 img.aborted = true;
                 clearImage();
             }catch(ex){}
