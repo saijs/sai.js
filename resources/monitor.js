@@ -125,7 +125,8 @@
 
         // XXX: 添加随机数避免缓存，发布时建议设置为 false。
         M.nocache = false;
-    }else if(M.S.endsWith(M._loc.hostname, ".sit.alipay.net") ||
+    }else if(M.S.endsWith(M._loc.hostname, ".test.alipay.net") ||
+        M.S.endsWith(M._loc.hostname, ".sit.alipay.net") ||
         // 移动前端监控：@颂赞。
         // 移动设备不便于修改 hosts 等原因，同时开启开发环境的监控。
         // 开发环境：
