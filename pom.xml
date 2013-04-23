@@ -1,0 +1,28 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.alipay.static</groupId>
+        <artifactId>alipay-parent</artifactId>
+        <version>RELEASE</version>
+    </parent>
+    <artifactId>alipay.fmsmng.monitor</artifactId>
+    <version>1.0</version>
+    <name>monitor</name>
+    <packaging>js</packaging>
+    <description>全站通用前端监控脚本</description>
+    <properties>
+        <tags>全站 公共</tags>
+    </properties>
+    <scm>
+        <connection>scm:svn:http://sources.alipay.net/svn/ueddocs/project/01.Arale/tags/alipay/alipay.fmsmng.monitor-1.0</connection>
+        <developerConnection>scm:svn:http://sources.alipay.net/svn/ueddocs/project/01.Arale/tags/alipay/alipay.fmsmng.monitor-1.0</developerConnection>
+        <url>http://sources.alipay.net/svn/ueddocs/project/01.Arale/tags/alipay/alipay.fmsmng.monitor-1.0</url>
+    </scm>
+    <developers>
+        <developer>
+            <name>冒顿</name>
+            <email>tianliang@alipay.com</email>
+        </developer>
+    </developers>
+
+</project>

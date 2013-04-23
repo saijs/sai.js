@@ -1,12 +1,6 @@
 // Quality Monitoring System.
 // DOMLint
-// TODO: 补全子分类
-// FIXME: DOM 属性不合法的检测正确性。
-// TODO: input[tabindex]
-// TODO: 标签不合法，增加上下文。
-// TODO: 属性不合法，增加关键上下文。
 //
-// TODO:
 //chrome://
 //chrome-extension://
 //data:text/css,
@@ -20,7 +14,42 @@
 !window.monitor || (function(){
     var M = window.monitor,
         URI = M.URI,
-        errorCodes = M.htmlErrorCodes,
+        // @see http://doc.alipay.net/pages/viewpage.action?pageId=24783626
+        errorCodes = {
+            syntaxError: 0,
+
+            tagsIllegal: 1, // 标签未结束等语法错误。。。
+                tagUnclosed: 100, // 标签未闭合，例如自闭合，或者非法闭合的标签。
+                tagsDeprecated: 101, // 过时的标签。
+                tagNameUpperCase: 102,
+                tagsNestedIllegal: 103, // 标签嵌套不合法。
+                titleIllegal: 104, // 文档标题不合法。
+
+            attrIllegal: 2, // 属性不合法。
+                protocolIllegal: 200, // HTTPS 资源中包含不安全资源。
+                inlineJS: 201, // 内联 JavaScript 脚本。
+                inlineCSS: 202, // 内联 CSS 脚本。
+                attrCharsetIllegal: 203, // 编码未设置，或编码设置不合法。
+                attrNameIllegal: 204, // 属性名不合法（大写）
+                attrValueIllegal: 205, // 属性值不合法（为空...）
+                attrNameDuplicated: 206, // 多个同名属性。
+                idDuplicated: 207, // 存在重复 ID。
+                attrMissQuote: 208, // 属性值缺少引号。
+                relIllegal: 209, // 缺少 rel 属性，或 rel 属性不合法
+                altIllegal: 210, // IMG 元素缺少 rel 属性。
+                typeIllegal: 211, // input,button 元素缺少 type 属性。
+                nameIllegal: 212, // input[type!=submit|button|image], textarea, select 缺少 name 属性。
+                labelForIllegal: 213, // label 标签的 for 属性不合法。
+                hrefIllegal: 214, // 链接缺少 href 属性，或 href 指向不合法。
+                flashOpacity: 215, // Flash 的不透明设置。
+
+            documentIllegal: 3,
+                doctypeIllegal: 300, // 缺少DOCTYPE，或DOCTYPE不合法。
+                documentCharsetIllegal: 301, // 编码未设置，或编码设置不合法。
+                resDuplicated: 302, // 重复的资源引用。
+                cssByImport: 303,
+                commentIllegal: 304
+        },
         checkProtocol = M.checkProtocol,
         htmlErrors = [],
         res={
@@ -55,18 +84,23 @@
     // DOM
     var D = {
         hasAttr: function(elem, attr){
-            if(!elem || 1!=elem.nodeType){
-                return false;
-            }
-            if(elem.hasAttribute){
-                return elem.hasAttribute(attr);
-            }
+            if(!elem || 1!=elem.nodeType){return false;}
+            if(elem.hasAttribute){return elem.hasAttribute(attr);}
             // for IE, not perfect.
             // @see http://www.patmullin.com/weblog/2006/04/06/getattributestyle-setattributestyle-ie-dont-mix/
-            if("style" == attr){
-                return "" !== elem.style.cssText;
-            }
-            return null!=elem.getAttribute(attr);
+            if("style" == attr){return "" !== elem.style.cssText;}
+            var val = elem.getAttribute(attr);
+            if(null == val){return false;}
+            else if("function" == typeof(val)){
+                // for IE:
+                // <div onclick="alert(0);">.getAttribute("onclick")
+                // <==>
+                // function onclick()
+                // {
+                // alert(0);
+                // }
+                return val.toString().indexOf("function "+attr+"()") == 0;
+            }else{return true;}
         },
         outerHTML:function(node){
             return node.outerHTML || (function(n){
@@ -100,62 +134,28 @@
      */
     function log(line, source, msg, code){
         htmlErrors.push({ln:line, err:code, code:source});
-        if(M.debug && window.console && window.console.log){
+        if(M.debug && window.console && console.log){
             window.console.log("DOMLint: line:"+line+", "+"code: "+code+
                 ", message:"+msg+", source:"+source+"");
         }
     }
 
-    var Stack = function(){
-        this._data = [];
-    };
-    Stack.prototype = {
-        push: function(obj){
-            return this._data.push(obj);
-        },
-        pop: function(){
-            return this._data.pop();
-        },
-        last: function(){
-            return this._data[this._data.length-1];
-        },
-        empty: function(){
-            return this._data.length == 0;
-        },
-        clear: function(){
-            this._data.length = 0;
-        }
-    };
     var counter = {
             doctypes: 0,
             heads: 0,
-            metas: 0,
             titles: 0,
-            forms: 0,
             scripts: 0,
             cssLinks: 0,
             styles: 0,
             objects: 0,
             params: 0,
             embeds: 0,
-            submits: 0,
             nodes: 0
         },
-        // XXX: to [].
-        context = {
-            heads: new Stack(),
-            forms: new Stack(),
-            objects: new Stack(),
-            iframes: new Stack(),
-            frames: new Stack(),
-            images: new Stack(),
-            ps: new Stack(),
-            pres: new Stack()
-        },
-        //re_protocol = /^([a-zA-Z][a-zA-Z0-9_-]:).*$/,
+        re_protocol = /^([a-zA-Z][a-zA-Z0-9_-]*:)/;
         //XXX: re_empty_uri.
-        //re_empty_uri =  /^javascript:(['"])\1;?$/,
-        re_empty_uri =  /^(['"])\1;?$/,
+        re_empty_uri =  /^javascript:(['"])\1;?$/,
+        //re_empty_uri =  /^(['"])\1;?$/,
         re_css_rel =    /^stylesheet$/i,
         re_css =        /\.css$/i,
         re_empty =      /^\s*$/,
@@ -163,11 +163,10 @@
         re_css_bg_img = /^url\((["'])?(.*)\1\)$/i,
         css_bg_img_cache = {};
     // XXX: URI.method()
-    var re_protocol = /^([a-zA-Z][a-zA-Z0-9_-]*:)/;
     function getProtocol(uri){
         var m = uri.match(re_protocol);
         if(null!=m && 2==m.length){return m[1];}
-        return location.protocol;
+        return M._loc.protocol;
     }
     // validate <iframe>, <frame>.
     function validateFrames(node){
@@ -178,9 +177,10 @@
             log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
             return;
         }
+        var uri = getProtocol(src);
         switch(getProtocol(src)){
         case "javascript:":
-            if(re_empty_uri.test(uri.pathname)){break;}
+            if(re_empty_uri.test(src)){break;}
         case "http:":
         case "file:":
         case "about:":
@@ -190,6 +190,7 @@
         //case "data:":
         //case "chrome:":
         //case "chrome-plugin:":
+        //case "chrome-extension:":
         //case "mailto:"
         //case "ftp:"
         //case "ftps:"
@@ -205,21 +206,23 @@
         //       +- https:
         // XXX: diff protocol, diff domain.
     }
-    function getFormName(){
-        var fm = context.forms.last(),
-            fn = "document.forms["+counter.forms+"]";
-        if(!fm){
-            fn = "noform";
-        }else if(D.hasAttr(fm, "id")){
-            fn = "form#"+fm.getAttribute("id");
-        }else if(D.hasAttr(fm, "name")){
-            fn = "form[name="+fm.getAttribute("id")+"]";
+    function getFormName(elem){
+        if(!elem || !elem.form){return ""}
+        var f = elem.form;
+        if(elem.form.id){return "form#"+f.id;}
+        else if(elem.form.name){return "form[name="+f.name+"]";}
+        else{
+            for(var i=0,l=document.forms.length; i<l; i++){
+                if(document.forms[i] == f){
+                    return "document.forms["+i+"]";
+                }
+            }
         }
-        return fn;
+        return "unknow-form";
     }
     // validate <input>, <button>, <select>, <textarea>.
     function validateFormElements(node){
-        var fn = getFormName(),
+        var fn = getFormName(node),
             html = fn + " " + D.wrapHTML(node);
         //if("noform"==fn){
             //if(M.debug && window.console && window.console.log){
@@ -251,65 +254,12 @@
     }
     // validate <input>, <button>.
     function validateButtons(node){
-        var html = getFormName()+": "+node.startTag;
+        var html = getFormName(node)+": "+D.wrapHTML(node);
 
-        if(D.hasAttr(node, "type")){
-            // XXX: 表单不允许有多个 submit?
-            //var type = node.getAttribute("type").toLowerCase();
-            //if(type=="submit" && (++counter.submits > 1)){
-                //log(0, html, "too much more submit buttons.",
-                    //errorCodes.tagsIllegal);
-            //}
-        }else{
+        if(!D.hasAttr(node, "type")){
             log(0, html, "missing attr:[type]", errorCodes.typeIllegal);
         }
         validateFormElements(node);
-    }
-    // validate <ol>, <ul>.
-    function validateList(node){
-        for(var i=0,l=node.childNodes.length; i<l; i++){
-            if(node.childNodes[i].nodeType != 1){continue;}
-            if("LI" != node.childNodes[i].tagName){
-                log(0, node.tagName+">"+D.wrapHTML(node.childNodes[i]),
-                    "ul,ol 中嵌套 li", errorCodes.tagsNestedIllegal);
-            }
-        }
-    }
-    // validate <dt>, <dd>.
-    function validateDefinedItem(node){
-        var ptag = node.parentNode.tagName;
-        if("DL" != ptag){
-            log(0, ptag+">"+D.wrapHTML(node),
-                "dl 中嵌套 dt", errorCodes.tagsNestedIllegal);
-        }
-    }
-    // validate <thead>, <tbody>, <tfoot>, <caption>, <colgroup>, <col>.
-    function validateTables(node){
-        var ptag = node.parentNode.tagName,
-            tag = node.tagName,
-            html = D.wrapHTML(node);
-        if("TABLE"!=ptag){
-            log(0, ptag+">"+html,
-                ptag+">"+node.tagName, errorCodes.tagsNestedIllegal);
-        }
-        // validate childNodes for thead, tbody, tfoot.
-        if("THEAD"==tag || "TBODY"==tag || "TFOOT"==tag){
-            for(var i=0,l=node.childNodes.length; i<l; i++){
-                if(node.childNodes[i].nodeType != 1){continue;}
-                if("TR" != node.childNodes[i].tagName){
-                    log("html", 0, html+">"+D.wrapHTML(node.childNodes[i]),
-                        tag+">"+node.childNodes[i].tagName);
-                }
-            }
-        }
-    }
-    // vali  <th>, <td>.
-    function validateTableCell(node){
-        var tag = node.parentNode.tagName;
-        if("TR" != tag){
-            log(0, tag+">"+D.wrapHTML(node),
-                tag+">"+node.tagName, errorCodes.tagsNestedIllegal);
-        }
     }
 
     var duplicateIDs=[], duplicateIDsCache={};
@@ -346,29 +296,12 @@
                     break;
                 }
             }
-            if(D.hasAttr(node, "style")){
-                log(0, html, "inline css.", errorCodes.inlineCSS);
-            }
-            // <p>
-            if(!context.ps.empty()){
-                if(!inline[node.tagName]){
-                    log(0, "p>"+html, "p>"+D.wrapHTML(context.ps.last()),
-                        errorCodes.tagsNestedIllegal);
-                }
-            }
-            // <pre>
-            if(!context.pres.empty()){
-                if(!inline[node.tagName]){
-                    log(0, "pre>"+html, "pre>"+html, errorCodes.tagsNestedIllegal);
-                }
-            }
+            //if(D.hasAttr(node, "style")){
+            //    log(0, html, "inline css.", errorCodes.inlineCSS);
+            //}
             // inline > block
             var tag = node.tagName,
                 ptag = node.parentNode.tagName;
-            // Note: !inline, do not use block.
-            if(inline[ptag] && !block[ptag] && block[tag] && !inline[tag]){
-                log(0, ptag+">"+html, ptag+">"+tag, errorCodes.tagsNestedIllegal);
-            }
             // css background-image.
             var bg = getStyle(node, "background-image");
             if(!!bg && "none"!=bg){
@@ -395,16 +328,15 @@
         //},
         "HEAD": function(node){
             counter.heads++;
-            context.heads.push(node);
             // check the document.charset
             // 在DOMReady时，任何浏览器都会有且仅有一个html,head,body标签，不多不少。
             // 对于IE，浏览器无论如何都会设置一个title，并将title放置是head的第一位。
             // 所以针对IE的charset检测是不准确的。
             // document.charset
-            if(M.Env.browser == "IE"){return;}
+            if(M.client.browser.name == "ie"){return;}
             var meta = D.firstChild(node),
                 illegal = true;
-            if(meta || "META"==meta.tagName){
+            if(meta && "META"==meta.tagName){
                 if(D.hasAttr(meta, "charset")){
                     illegal = false;
                 }else if(D.hasAttr(meta, "http-equiv") &&
@@ -413,8 +345,6 @@
                     meta.getAttribute("content").indexOf("charset")>=0){
                         illegal = false;
                 }
-            }else{
-                illegal = true;
             }
             if(illegal){
                 log(0, "document charset illegal.",
@@ -428,17 +358,6 @@
                     errorCodes.titleIllegal);
             }
         },
-        "META": function(node){
-            counter.metas++;
-        },
-        "FORM": function(node){
-            if(!context.forms.empty()){
-                log(0, "form "+D.wrapHTML(node),
-                    "form nested illegal.", errorCodes.tagsNestedIllegal);
-            }
-            context.forms.push(node);
-            counter.forms++;
-        },
         "INPUT":  validateButtons,
         "BUTTON": validateButtons,
         "SELECT":   validateFormElements,
@@ -451,11 +370,11 @@
             }
             var id = node.getAttribute("for");
             if(re_empty.test(id)){
-                log(0, html, "attr [for] missing value.", errorCodes.attrValueIllegal);
+                log(0, html, "attr [for] missing value.", errorCodes.labelForIllegal);
                 return;
             }
             if(!duplicateIDsCache.hasOwnProperty("ID_"+id)){
-                log(0, html, "#"+id+" not exist.", errorCodes.attrValueIllegal);
+                log(0, html, "#"+id+" not exist.", errorCodes.labelForIllegal);
                 return;
             }
         },
@@ -466,22 +385,12 @@
                 //log(0, html, "missing attr [type].", errorCodes.typeIllegal);
             //}
             if(!D.hasAttr(node, "src")){return;}
+            var src = node.getAttribute("src");
+
             if(!D.hasAttr(node, "charset")){
                 log(0, html, "missing charset.", errorCodes.attrCharsetIllegal);
             }
-            // resources.
-            var src = node.getAttribute("src");
-            uri = URI.path(src);
-            if(!M.URI.isExternalRes(uri)){
-                res.js.push(uri);
-                if(res_cache.js.hasOwnProperty(uri)){
-                    res_cache.js[uri]++;
-                }else{
-                    res_cache.js[uri] = 1;
-                }
-            }
             // protocol.
-            if(!checkProtocol){return;}
             if(!src || re_empty.test(src)){
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
                 return;
@@ -489,14 +398,18 @@
             switch(getProtocol(src)){
             case "http:":
             case "file:":
+                if(checkProtocol){
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
+                }
                 break;
-            //case "https:":
+            case "https:":
+                break;
             //case "javascript:":
             //case "about:":
             //case "data:":
             //case "chrome:":
             //case "chrome-plugin:":
+            //case "chrome-extension:":
             //case "mailto:"
             //case "ftp:"
             //case "ftps:"
@@ -504,12 +417,19 @@
             default:
                 return;
             }
+            // resources.
+            uri = URI.path(URI.abs(src));
+            res.js.push(uri);
+            if(res_cache.js.hasOwnProperty(uri)){
+                res_cache.js[uri]++;
+            }else{
+                res_cache.js[uri] = 1;
+            }
         },
         "LINK": function(node){
             var type = node.getAttribute("type"),
                 rel = node.getAttribute("rel"),
                 href = node.getAttribute("href"),
-                uri = URI.parse(href),
                 html = D.wrapHTML(node);
             // link 标签的嵌套。
             //var tag = node.parentNode.tagName;
@@ -528,21 +448,7 @@
                 //log(0, html, "link[rel=stylesheet] missing [type].",
                     //errorCodes.typeIllegal);
             //}
-            if(!D.hasAttr(node, "charset")){
-                log(0, html, "missing charset.", errorCodes.attrCharsetIllegal);
-            }
-            // resources.
-            uri = URI.path(href);
-            if(!M.URI.isExternalRes(uri)){
-                res.css.push(uri);
-                if(res_cache.css.hasOwnProperty(uri)){
-                    res_cache.css[uri]++;
-                }else{
-                    res_cache.css[uri] = 1;
-                }
-            }
             // protocol.
-            if(!checkProtocol){return;}
             if(!href || re_empty.test(href)){
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
                 return;
@@ -550,20 +456,34 @@
             switch(getProtocol(href)){
             case "http:":
             case "file:":
+                if(!checkProtocol){break;}
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
                 break;
-            //case "https:":
+            case "https:":
+                break;
             //case "javascript:":
             //case "about:":
             //case "data:":
             //case "chrome:":
             //case "chrome-plugin:":
+            //case "chrome-extension:":
             //case "mailto:"
             //case "ftp:"
             //case "ftps:"
             //...
             default:
                 return;
+            }
+            if(!D.hasAttr(node, "charset")){
+                log(0, html, "missing charset.", errorCodes.attrCharsetIllegal);
+            }
+            // resources.
+            href = URI.path(URI.abs(href));
+            res.css.push(href);
+            if(res_cache.css.hasOwnProperty(href)){
+                res_cache.css[href]++;
+            }else{
+                res_cache.css[href] = 1;
             }
         },
         "STYLE": function(node){
@@ -579,7 +499,6 @@
         "IMG": function(node){
             var attrs = [],
                 src = node.getAttribute("src"),
-                uri = URI.parse(src),
                 html = D.wrapHTML(node);
             if(!D.hasAttr(node, "alt") ||
               re_empty.test(node.getAttribute("alt"))){
@@ -596,18 +515,7 @@
             if(attrs.length>0){
                 log(0, html, "missing "+attrs.join(), errorCodes.altIllegal);
             }
-            uri = URI.path(src);
-            if(!M.URI.isExternalRes(uri)){
-                // TODO: detect duplicate resources.
-                res.img.push(uri);
-                if(res_cache.img.hasOwnProperty(uri)){
-                    res_cache.img[uri]++;
-                }else{
-                    res_cache.img[uri] = 1;
-                }
-            }
             // protocol.
-            if(!checkProtocol){return;}
             if(!src || re_empty.test(src)){
                 log(0, html, "protocol illegal.",
                     errorCodes.protocolIllegal);
@@ -616,14 +524,18 @@
             switch(getProtocol(src)){
             case "http:":
             case "file:":
+                if(checkProtocol){
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
+                }
                 break;
-            //case "https:":
+            case "https:":
+                break;
             //case "javascript:":
             //case "about:":
             //case "data:":
             //case "chrome:":
             //case "chrome-plugin:":
+            //case "chrome-extension:":
             //case "mailto:"
             //case "ftp:"
             //case "ftps:"
@@ -631,19 +543,26 @@
             default:
                 return;
             }
+            uri = URI.path(URI.abs(src));
+            // TODO: detect duplicate resources.
+            res.img.push(uri);
+            if(res_cache.img.hasOwnProperty(uri)){
+                res_cache.img[uri]++;
+            }else{
+                res_cache.img[uri] = 1;
+            }
         },
         "OBJECT": function(node){
-            context.objects.push(node);
             counter.objects++;
             if(D.hasAttr(node, "codebase")){
-                // protocol.
-                if(!checkProtocol){return;}
+                var src = node.getAttribute("codebase");
+                // object[codebase=""]
                 if(!src || re_empty.test(src)){
                     log(0, '<object codebase="'+src+'"',
                         "protocol illegal.", errorCodes.protocolIllegal);
                     return;
                 }
-                var src = node.getAttribute("codebase");
+                if(!checkProtocol){return;}
                 switch(getProtocol(src)){
                 case "http:":
                 case "file:":
@@ -656,6 +575,7 @@
                 //case "data:":
                 //case "chrome:":
                 //case "chrome-plugin:":
+                //case "chrome-extension:":
                 //case "mailto:"
                 //case "ftp:"
                 //case "ftps:"
@@ -677,18 +597,8 @@
             //}
             if("movie"==node.getAttribute("name") ||
               "src"==node.getAttribute("src")){
-                var src = node.getAttribute("value"),
-                    uri = URI.path(src);
-                if(!M.URI.isExternalRes(uri)){
-                    res.fla.push(uri);
-                    if(res_cache.fla.hasOwnProperty(uri)){
-                        res_cache.fla[uri]++;
-                    }else{
-                        res_cache.fla[uri] = 1;
-                    }
-                }
+                var src = node.getAttribute("value");
                 // protocol.
-                if(!checkProtocol){return;}
                 if(!src || re_empty.test(src)){
                     log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
                     return;
@@ -696,20 +606,31 @@
                 switch(getProtocol(src)){
                 case "http:":
                 case "file:":
+                    if(checkProtocol){
                     log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
+                    }
                     break;
-                //case "https:":
+                case "https:":
+                    break;
                 //case "about:":
                 //case "javascript:":
                 //case "data:":
                 //case "chrome:":
                 //case "chrome-plugin:":
+                //case "chrome-extension:":
                 //case "mailto:"
                 //case "ftp:"
                 //case "ftps:"
                 //...
                 default:
                     return;
+                }
+                uri = URI.path(URI.abs(src));
+                res.fla.push(uri);
+                if(res_cache.fla.hasOwnProperty(uri)){
+                    res_cache.fla[uri]++;
+                }else{
+                    res_cache.fla[uri] = 1;
                 }
             }
         },
@@ -725,18 +646,8 @@
                 //log(0, html, "missing embed[wmode].", errorCodes.flashOpacity);
             //}
             if(!D.hasAttr(node, "src")){return;}
-            var src = node.getAttribute("src"),
-                uri = URI.path(src);
-            if(!M.URI.isExternalRes(uri)){
-                res.fla.push(uri);
-                if(res_cache.fla.hasOwnProperty(uri)){
-                    res_cache.fla[uri]++;
-                }else{
-                    res_cache.fla[uri] = 1;
-                }
-            }
+            var src = node.getAttribute("src");
             // protocol.
-            if(!checkProtocol){return;}
             if(!src || re_empty.test(src)){
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
                 return;
@@ -744,20 +655,31 @@
             switch(getProtocol(src)){
             case "http:":
             case "file:":
+                if(checkProtocol){
                 log(0, html, "protocol illegal.", errorCodes.protocolIllegal);
+                }
                 break;
-            //case "https:":
+            case "https:":
+                break;
             //case "about:":
             //case "javascript:":
             //case "data:":
             //case "chrome:":
             //case "chrome-plugin:":
+            //case "chrome-extension:":
             //case "mailto:"
             //case "ftp:"
             //case "ftps:"
             //...
             default:
                 return;
+            }
+            uri = URI.path(URI.abs(src));
+            res.fla.push(uri);
+            if(res_cache.fla.hasOwnProperty(uri)){
+                res_cache.fla[uri]++;
+            }else{
+                res_cache.fla[uri] = 1;
             }
         },
         "FONT": function(node){
@@ -772,71 +694,11 @@
             log(0, D.wrapHTML(node), "tagName deprecated.",
                 errorCodes.tagsDeprecated);
         },
-        "P": function(node){
-            context.ps.push(node);
-        },
-        "PRE": function(node){
-            context.pres.push(node);
-        },
-        "UL": validateList,
-        "OL": validateList,
-        "LI": function(node){
-            var tag = node.parentNode.tagName;
-            if("UL"!=tag && "OL"!=tag){
-                log(0, tag+">"+D.wrapHTML(node),
-                    "ul,ol 中嵌套 li", errorCodes.tagsNestedIllegal);
-            }
-        },
-        "DL": function(node){
-            for(var i=0,tag,l=node.childNodes.length; i<l; i++){
-                if(node.childNodes[i].nodeType != 1){continue;}
-                tag = node.childNodes[i].tagName;
-                if("DT" != tag && "DD" != tag){
-                  log(0, "dl>"+D.wrapHTML(node.childNodes[i]),
-                      "dl 中嵌套 dt", errorCodes.tagsNestedIllegal);
-                }
-            }
-        },
-        "DT": validateDefinedItem,
-        "DD": validateDefinedItem,
         // @see http://www.w3schools.com/html/html_tables.asp
-        "TABLE": function(node){
-            for(var i=0,tag,l=node.childNodes.length; i<l; i++){
-                if(node.childNodes[i].nodeType != 1){continue;}
-                tag = node.childNodes[i].tagName;
-                if("THEAD"!=tag && "TBODY"!=tag && "TFOOT"!=tag && "TR"!=tag ||
-                  "CAPTION"!=tag || "COLGROUP"!=tag || "COL"!=tag){
-                    log(0, D.wrapHTML(node),
-                        "table>"+tag, errorCodes.tagsNestedIllegal);
-                }
-            }
-        },
-        "CAPTION": validateTables,
-        "COLGROUP": validateTables,
-        "COL": validateTables,
-        "THEAD": validateTables,
-        "TBODY": validateTables,
-        "TFOOT": validateTables,
-        "TR": function(node){
-            var tag = node.parentNode.tagName,
-                html = D.wrapHTML(node);
-            if("TABLE"!=tag && "THEAD"!=tag && "TBODY"!=tag && "TFOOT"!=tag){
-                log(0, html, tag+">"+node.tagName, errorCodes.tagsNestedIllegal);
-            }
-            for(var i=0,l=node.childNodes.length; i<l; i++){
-                if(node.childNodes[i].nodeType != 1){continue;}
-                if("TD" != node.childNodes[i].tagName){
-                    log(0, html, node.tagName+">"+node.childNodes[i].tagName,
-                        errorCodes.tagsNestedIllegal);
-                }
-            }
-        },
-        "TH": validateTableCell,
-        "TD": validateTableCell,
         "A": function(node){
             // XXX: 统一状态判断。
-            var debug = !(location.protocol=="https:" &&
-                    location.hostname.indexOf(".alipay.com")>0),
+            var debug = !(M._loc.protocol=="https:" &&
+                    M._loc.hostname.indexOf(".alipay.com")>0),
                 html = D.wrapHTML(node);
             if(!D.hasAttr(node, "href")){
                 log(0, html, "missing [href]", errorCodes.hrefIllegal);
@@ -857,24 +719,7 @@
             // XXX: 站内地址检测是否有效(404)，仅限于SIT环境。
         }
     };
-    var rules_tags_leave = {
-        "!DOCTYPE": function(node){},
-        "FORM": function(node){
-            context.forms.pop();
-            counter.submits = 0;
-        },
-        "object": function(node){
-            context.objects.pop();
-        },
-        "PARAM": function(node){
-        },
-        "P": function(node){
-            context.ps.pop();
-        },
-        "PRE": function(node){
-            context.pres.pop();
-        }
-    };
+    // 仅执行一次的全局规则。
     // global rules.
     function rule_global(doc){
         if("BackCompat" == doc.compatMode){
@@ -886,7 +731,7 @@
             log(0, "duplicate id:"+duplicateIDs.join(","),
                 "duplicate id.", errorCodes.idDuplicated);
         }
-        if(M.Env.browser == "IE"){return;}
+        if(M.client.browser.name == "ie"){return;}
         if(counter.titles < 1){
             log(0, "missing title.", "missing title.", errorCodes.titleIllegal);
         }else if(counter.titles > 1){
@@ -908,139 +753,27 @@
     //    http://xerces.apache.org/xerces2-j/javadocs/api/org/w3c/dom/traversal/TreeWalker.html
     //    http://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html#Traversal-TreeWalker
     //    http://www.javascriptkit.com/dhtmltutors/treewalker.shtml
-    function walkFF(doc, enter, leave){
-        // walk firefox.
-        var root = doc.createTreeWalker(document, NodeFilter.SHOW_ELEMENT,
-            null, false), node=root;
-        while(node = node.nextNode()){
-            //node.tagName, node.value, node.href
-        }
-    }
-    // FIXME: 通用非递归遍历 DOM。
-    // TODO: do{
-    //      enter[tagName]();
-    //
-    //      node = node.firstChild;
-    // }while(node && node!=root);
-    function isNode(n){
-        if(!n){return false;}
-        var t=n.nodeType;
-        //return t==1 || t==8;
-        return t==1 || t==8 || t==9;
-    }
-    function nextNode(n){
-        do{
-            n = n.nextSibling;
-        }while(n && !isNode(n));
-        return isNode(n) ? n : null;
-    }
-    function firstNode(n){
-        n = n.firstChild;
-        if(!n){return null;}
-        return isNode(n) ? n : nextNode(n);
-    }
-    // XXX: 处理 P 标签时貌似有问题。
-    function walk2(root, enter, leave){
-        var node=root, tag, tmp,
-            enterAll = enter && enter.hasOwnProperty("*") &&
-                "function"==typeof(enter["*"]),
-            leaveAll = leave && leave.hasOwnProperty("*") &&
-                "function"==typeof(leave["*"]);
-        Lwalk: do{
-            // @see http://reference.sitepoint.com/javascript/DocumentType
-            // http://stackoverflow.com/questions/3043820/jquery-check-doctype
-            if(1 == node.nodeType){ // HTMLElement.
-                tag = node.tagName;
-            }else if(8 == node.nodeType){ // comment.
-                // TODO: re_doctype
-                var re_doctype = /^DOCTYPE\s/i;
-                if(re_doctype.test(node.nodeValue)){
-                    tag = "!DOCTYPE";
-                }else{
-                    tag = "!--";
-                }
-            }else if(9 == node.nodeType){ // document.
-                tag = null;
-            }else if(10 == node.nodeType){ // document type.
-                tag = "!DOCTYPE";
-            }else{continue Lwalk;}
-            if(tag){
-                if(enterAll){enter["*"](node);}
-                if(enter && enter.hasOwnProperty(tag) &&
-                  "function"==typeof(enter[tag])){
-                    enter[tag](node);
-                }
+    // 平板式遍历 DOM 节点方法。
+    function walk(root, rules){
+        if(!root){root = document;}
+        var elems = root.getElementsByTagName("*");
+        for(var i=0,tagName,node,l=elems.length; i<l,node=elems[i]; i++){
+            switch(node.nodeType){
+            case 1: // element.
+                tagName = node.tagName.toUpperCase();
+                break;
+            case 8: // comment.
+                tagName = "!--";
+                break;
+            case 9: // document.
+                // FIXME: not !DOCTYPE.
+                tagName = "!DOCTYPE";
+                break;
+            default:
+                return;
             }
-
-            if(tmp = firstNode(node)){ // firstChild(HTMLElement)
-                node = tmp;
-            }else if(tmp = nextNode(node)){ // nextSibling(HTMLElement)
-                node = tmp;
-            }else if(node.parentNode){
-                do{
-                    if(tag){
-                        if(leave && leave.hasOwnProperty(tag) &&
-                          "function"==typeof(leave[tag])){
-                            leave[tag](node);
-                        }
-                        if(leaveAll){leave["*"](node);}
-                    }
-
-                    if(node == root){break Lwalk;}
-                    node = node.parentNode;
-                    tag = node.tagName;
-                    if(tmp = nextNode(node)){ // node.nextSibling(HTMLElement)
-                        node = tmp;
-                        continue Lwalk;
-                    }
-                }while(node);
-                break Lwalk;
-            }else{
-                break Lwalk;
-            }
-        }while(node && node!=root);
-    }
-    function walk(node, enter, leave){
-        if(!node){return;}
-        var tagName;
-        switch(node.nodeType){
-        case 1: // element.
-            tagName = node.tagName;
-            break;
-        case 8: // comment.
-            tagName = "!--";
-            break;
-        case 9: // document.
-            // FIXME: not !DOCTYPE.
-            tagName = "!DOCTYPE";
-            break;
-        default:
-            return;
-        }
-
-        if(enter){
-            if(enter.hasOwnProperty("*") && "function"==typeof(enter["*"])){
-                enter["*"](node);
-            }
-            if(enter.hasOwnProperty(tagName) && "function"==typeof(enter[tagName])){
-                enter[tagName](node);
-            }
-        }
-
-        var nodeSelf = node;
-        node = node.firstChild;
-        while (node) {
-            walk(node, enter, leave);
-            node = node.nextSibling;
-        }
-
-        if(leave){
-            if(leave.hasOwnProperty(tagName) && "function"==typeof(leave[tagName])){
-                leave[tagName](nodeSelf);
-            }
-            if(leave.hasOwnProperty("*") && "function"==typeof(leave["*"])){
-                leave["*"](nodeSelf);
-            }
+            if(rules.hasOwnProperty("*")){rules["*"](node);}
+            if(rules.hasOwnProperty(tagName)){rules[tagName](node);}
         }
     }
 
@@ -1049,13 +782,12 @@
         preProcessing2(doc);
         t0 = new Date() - t0;
         var t1 = new Date();
-        //walk(doc, rules_tags_enter, rules_tags_leave);
-        walk2(doc, rules_tags_enter, rules_tags_leave);
+        walk(doc, rules_tags_enter);
         rule_global(doc);
         t1 = new Date() - t1;
 
-        if(M.debug && window.console && window.console.log){
-            window.console.log("New Time2: ", t0, t1);
+        if(M.debug && window.console && console.log){
+            console.log("New Time2: ", t0, " ", t1);
         }
 
         return {
