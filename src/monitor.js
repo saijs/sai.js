@@ -86,7 +86,7 @@ define(function(require, exports, module) {
    * @return {String}
    */
   function rand(){
-    return (""+Math.random()).slice(-4);
+    return (""+Math.random()).slice(-6);
   }
   /**
    * 获得资源的路径（不带参数和 hash 部分）
