@@ -164,7 +164,7 @@ define(function(require, exports, module) {
     ref: doc.referrer || "-",
     //sys: servName,
     // XXX: 使用 detector v1.1.0 使用 full_version 属性。
-    client: detector.device.name+"/"+String(detector.device.version)+"|"+
+    clnt: detector.device.name+"/"+String(detector.device.version)+"|"+
       detector.os.name+"/"+String(detector.os.version)+"|"+
       detector.browser.name+"/"+String(detector.browser.version)+"|"+
       detector.engine.name+"/"+String(detector.engine.version),
