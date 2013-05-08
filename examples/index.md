@@ -13,9 +13,16 @@
 </html>
 ```
 
+* 明文手机号：13912345678, 18612345678
+* 明文身份证：360481198312042014
+* 明文银行卡：6228480323012001315, 6225885718336712
+
+
 
 ````javascript
-seajs.use(["jquery", "monitor", "idcard", "bankcard"], function($, monitor){
+seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
+    function($, monitor, IDCard, BankCard, Mobile){
+
   /**
    * 随机采样命中算法。
    * @param {Nuber} rate, 采样率，[0,1] 区间的数值。
@@ -25,26 +32,27 @@ seajs.use(["jquery", "monitor", "idcard", "bankcard"], function($, monitor){
     return 0 === Math.floor(Math.random() / rate);
   };
 
-  if(!hit(0.8)){return;}
+  if(!hit(1)){return;}
 
-  window.monitor.boot();
+  monitor.boot();
 
   $(function(){
     var html = (document.documentElement || document.body).innerHTML;
     var re_cards = /\b\d{11,19}\b/g;
     var m = html.match(re_cards);
+    console.log(m)
     if(m){
       for(var i=0,l=m.length; i<l; i++){
         if(IDCard.verify(m[i])){
-          monitor.log("sens", "idcard");
+          console.log("sens", "idcard");
         }else if(BankCard.verify(m[i])){
-          monitor.log("sens", "bankcard");
-        }else if(MobileNumber.verify(m[i])){
-          monitor.log("sens", "mobile");
+          console.log("sens", "bankcard");
+        }else if(Mobile.verify(m[i])){
+          console.log("sens", "mobile");
         }
       }
     }
-  })
+  });
 
 });
 ````
