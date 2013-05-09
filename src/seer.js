@@ -4,6 +4,17 @@
   var M = window.monitor = {};
   M._DATAS = [];
 
+  var lost_resources = [];
+  var _lost_resources = {};
+  /**
+   * 客户端资源加载失败时调用这个接口。
+   */
+  M.lost = function(uri){
+    if(_lost_resources.hasOwnProperty(uri)){return;}
+    _lost_resources[uri] = true;
+    lost_resources.push(uri);
+  };
+
   /**
    * 通用监控接口。
    * @param {String} seed, 监控点。
@@ -41,7 +52,8 @@
       profile: "jserror",
       msg: message || "",
       file: file || "",
-      line: line || 0
+      line: line || 0,
+      lost: lost_resources.join(",")
     };
     M._DATAS.push(data);
     return data;
