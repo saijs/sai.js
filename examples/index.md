@@ -2,20 +2,18 @@
 
 ---
 
+<style>
+button{
+  padding: 5px 8px;
+  cursor:pointer;
+}
+</style>
+
 <script type="text/javascript" src="../src/seer.js"></script>
 
-```html
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <script type="text/javascript" src="monitor-seer.js"></script>
-  </head>
-</html>
-```
-
 * 明文手机号：13912345678, 18612345678
-* 明文身份证：360481198312042014
-* 明文银行卡：6228480323012001315, 6225885718336712
+* 明文身份证：36048119881214202X
+* 明文银行卡：6225885718336811
 
 
 
@@ -34,21 +32,21 @@ seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
 
   if(!hit(1)){return;}
 
+  // 启动监控。
   monitor.boot();
 
   $(function(){
     var html = (document.documentElement || document.body).innerHTML;
-    var re_cards = /\b\d{11,19}\b/g;
+    var re_cards = /\b\d{11,19}X?\b/g;
     var m = html.match(re_cards);
-    console.log(m)
     if(m){
       for(var i=0,l=m.length; i<l; i++){
-        if(IDCard.verify(m[i])){
-          console.log("sens", "idcard");
+        if(Mobile.verify(m[i])){
+          monitor.log("mobile", "sens");
+        }else if(IDCard.verify(m[i])){
+          monitor.log("idcard", "sens");
         }else if(BankCard.verify(m[i])){
-          console.log("sens", "bankcard");
-        }else if(Mobile.verify(m[i])){
-          console.log("sens", "mobile");
+          monitor.log("bankcard", "sens");
         }
       }
     }
@@ -57,16 +55,36 @@ seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
 });
 ````
 
+----
+
+<script type="text/javascript" onerror="monitor.lost(this.src)" src="123.js"></script>
+
 <button type="button" id="btn1">throw new Error()</button>
 <button type="button" id="btn2">throw new Error()</button>
 
+----
+
+<button type="button" id="btn3">monitor.log(seed)</button>
+<button type="button" id="btn4">monitor.log(seed, profile)</button>
+
 <script type="text/javascript">
+seajs.on("error", function(module){
+  monitor.lost(module.uri);
+});
+seajs.use("abc");
+
 seajs.use(["jquery", "monitor"], function($, monitor){
   $("#btn1").click(function(){
     throw new Error("throw new error message.");
   });
   $("#btn2").click(function(){
     monitor.error(new Error("log new error message."));
+  });
+  $("#btn3").click(function(){
+    monitor.log("test-seed");
+  });
+  $("#btn4").click(function(){
+    monitor.log("test-seed", "test-profile");
   });
 });
 </script>
