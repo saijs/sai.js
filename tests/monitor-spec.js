@@ -29,7 +29,8 @@ define(function(require) {
         profile: "jserror",
         msg: "error message.",
         file: "",
-        line: 0
+        line: 0,
+        lost: ""
       })).to.equal(true);
       try{
         throw new Error("message");
@@ -38,7 +39,8 @@ define(function(require) {
           profile: "jserror",
           msg: "message",
           file: "",
-          line: 0
+          line: 0,
+          lost: ""
         })).to.equal(true);
       }
     });
