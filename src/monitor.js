@@ -180,11 +180,11 @@ define(function(require, exports, module) {
    */
   function send(url, data, callback){
     if(!callback){callback = function(){};}
-    if(!data){callback(); return;}
+    if(!data){return callback();}
 
     var d = param(data);
     var url = url+(url.indexOf("?")<0 ?"?":"&")+d;
-    if(url.length > URLLength){return;}
+    if(url.length > URLLength){return callback();}
 
     // @see http://www.javascriptkit.com/jsref/image.shtml
     var img = new Image(1,1);
@@ -199,10 +199,10 @@ define(function(require, exports, module) {
 
   var sending = false;
   /**
-   * 分时发送数据，避免 IE(6) 的连接请求数限制。
+   * 分时发送队列中的数据，避免 IE(6) 的连接请求数限制。
    */
   function timedSend(){
-    if(sending){return;}
+    if(!monitoring || sending){return;}
 
     var e = M._DATAS.shift();
     if(!e){return;}
@@ -240,9 +240,12 @@ define(function(require, exports, module) {
 
   /**
    * 启动监控进程，开始发送数据。
+   * @param {Boolean} state, 启动状态标识。
+   *    为 `false` 时停止监控。
+   *    否则启动监控。
    */
-  M.boot = function(){
-    monitoring = true;
+  M.boot = function(state){
+    monitoring = (state !== false);
   };
 
   window.monitor = M;
