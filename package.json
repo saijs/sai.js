@@ -1,0 +1,19 @@
+{
+  "family": "alipay",
+  "name": "monitor",
+  "version": "2.0.0",
+  "description": "支付宝前端监控脚本",
+  "homepage": "https://github.com/totorojs/monitor.js",
+  "author": "",
+  "repository": "git://github.com/totorojs/monitor.js.git",
+  "bugs": "",
+  "keywords": ["widget"],
+  "licenses": "MIT",
+  "spm": {
+    "output": ["monitor.js"],
+    "alias": {
+      "jquery": "jquery/jquery/1.7.2/jquery.js",
+      "detector": "arale/detector/1.0.1/detector"
+    }
+  }
+}
