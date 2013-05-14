@@ -14,9 +14,5 @@ define(function(require, exports, module){
   exports.verify = function(phone){
     return re_mobile.test(phone);
   };
-  // TODO
-  //exports.contains = function(phone){
-    //return re_mobile.test(phone);
-  //};
 
 });
