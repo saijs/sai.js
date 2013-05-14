@@ -18,8 +18,10 @@ button{
 
 
 ````javascript
-seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
-    function($, monitor, IDCard, BankCard, Mobile){
+seajs.use(["jquery", "monitor", "privacy"], function($, monitor, privacy){
+
+  // 命中率：[0,1]: 实际对应采样率：[0%,100%]
+  var rate = 1;
 
   /**
    * 随机采样命中算法。
@@ -37,19 +39,7 @@ seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
 
   $(function(){
     var html = (document.documentElement || document.body).innerHTML;
-    var re_cards = /\b\d{11,19}X?\b/g;
-    var m = html.match(re_cards);
-    if(m){
-      for(var i=0,l=m.length; i<l; i++){
-        if(Mobile.verify(m[i])){
-          monitor.log("mobile", "sens");
-        }else if(IDCard.verify(m[i])){
-          monitor.log("idcard", "sens");
-        }else if(BankCard.verify(m[i])){
-          monitor.log("bankcard", "sens");
-        }
-      }
-    }
+    privacy.scan(html);
   });
 
 });
@@ -59,8 +49,9 @@ seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
 
 <script type="text/javascript" onerror="monitor.lost(this.src)" src="123.js"></script>
 
-<button type="button" id="btn1">throw new Error()</button>
-<button type="button" id="btn2">throw new Error()</button>
+<button type="button" id="btn-ex1">throw new Error()</button>
+<button type="button" id="btn-ex2">monitor.error(new Error())</button>
+<button type="button" id="btn-ex3">try undefined var</button>
 
 ----
 
@@ -69,16 +60,30 @@ seajs.use(["jquery", "monitor", "idcard", "bankcard", "mobilephone"],
 
 <script type="text/javascript">
 seajs.on("error", function(module){
+  console.log(module);
   monitor.lost(module.uri);
 });
 seajs.use("abc");
 
 seajs.use(["jquery", "monitor"], function($, monitor){
-  $("#btn1").click(function(){
+  $("#btn-ex1").click(function(){
     throw new Error("throw new error message.");
   });
-  $("#btn2").click(function(){
+  $("#btn-ex2").click(function(){
     monitor.error(new Error("log new error message."));
+  });
+  $("#btn-ex3").click(function(){
+    function a2(){
+    try{
+      notDefined();
+    }catch(ex){
+      monitor.error(ex);
+    }
+    }
+    function a1(){
+        a2();
+    }
+    a1();
   });
   $("#btn3").click(function(){
     monitor.log("test-seed");
