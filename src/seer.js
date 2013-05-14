@@ -38,21 +38,56 @@
     return data;
   };
 
-  // TODO: `time` 统计数值计算的接口。
+  var RE_FUNCTION = /^function\s+(\w+)\s*\(/;
+  /**
+   * 获得函数名。
+   * @param {Function} func, 函数对象。
+   * @return {String} 函数名。
+   */
+  function function_name(func){
+    var match = func.toString().match(RE_FUNCTION);
+    return match && match.length!==0 ? match[1] : "anonymous";
+  }
+
+  /**
+   * 函数调用堆栈。
+   * XXX: 匿名函数的支持。
+   * @param {Function} call, function's caller.
+   * @return {String} stack trace.
+   */
+  function stacktrace(call){
+    var stack = [];
+
+    while(call = call.arguments.callee.caller){
+      stack.push("at " + function_name(call) + "()");
+
+      // Because of a bug in Navigator 4.0, we need this line to break.
+      // c.caller will equal a rather than null when we reach the end
+      // of the stack. The following line works around this.
+      if (call.caller == call) break;
+    }
+    return stack.join("\n");
+  };
 
   /**
    * JavaScript 异常统一处理函数。
    * @param {String} message, 异常消息。
    * @param {String} file, 异常所在文件。
    * @param {Number} line, 异常所在行。
+   * @param {Number,String} number, 异常编码，IE 支持。
    * @return {Object} 主要用于单元测试，本身可以不返回。
    */
-  function error(message, file, line){
+  function error(message, file, line, number, stack){
+    if(!stack && arguments.callee.caller){
+      stack = stacktrace(arguments.callee.caller);
+    }
     var data = {
       profile: "jserror",
       msg: message || "",
       file: file || "",
       line: line || 0,
+      num: number || "",
+      stack: stack,
       lost: lost_resources.join(",")
     };
     M._DATAS.push(data);
@@ -64,9 +99,16 @@
    * @param {Error} err, JavaScript 异常对象。
    * @return {Object} 主要用于单元测试。
    */
-  M.error = function(e) {
-    if (!(e instanceof Error)) {return;}
-    return error(e.message, e.fileName, e.lineNumber || e.line);
+  M.error = function(ex){
+    if (!(ex instanceof Error)) {return;}
+    var stack = ex.stack || ex.stacktrace;
+    return error(
+      ex.message || ex.description,
+      ex.fileName,
+      ex.lineNumber || ex.line,
+      ex.number,
+      stack
+    );
   };
 
   /**
@@ -78,5 +120,6 @@
   window.onerror = function(message, file, line) {
     error(message, file, line);
     return false;
-  }
+  };
+
 })();
