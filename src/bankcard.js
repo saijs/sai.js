@@ -1,13 +1,18 @@
 /**
  * @overview
  *
- * @see http://en.wikipedia.org/wiki/Luhn_algorithm
  * @author 闲耘™ (hotoo.cn[AT]gmail.com)
  * @version 2013/05/02
  */
 
 define(function(require, exports, module){
 
+  /**
+   * Luhn 算法
+   * @see http://en.wikipedia.org/wiki/Luhn_algorithm
+   * @param {String} card, 被校验的号码。
+   * @return {Boolean} `true` 如果通过校验，否则返回 `false`。
+   */
   function luhn(card){
     var sum = 0;
     for(var i=card.length-1,c,even; i>=0; i--){
@@ -26,11 +31,15 @@ define(function(require, exports, module){
 
   var re_card = /^[0-9]{13,19}$/;
 
-  // TODO: 中国农业银行卡号不符合 luhn 算法。
-  function verify(card){
+
+  /**
+   * 校验银行卡号码是否合法。
+   * @param {String} card, 校验的银行卡号码。
+   * @return {Boolean} `true` 如果通过校验，否则返回 `false`。
+   */
+  exports.verify = function(card){
     card = String(card);
     return re_card.test(card) && luhn(card);
-  }
+  };
 
-  exports.verify = verify;
 });
