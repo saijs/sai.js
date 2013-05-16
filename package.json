@@ -10,7 +10,7 @@
   "keywords": ["widget"],
   "licenses": "MIT",
   "spm": {
-    "output": ["monitor.js"],
+    "output": ["monitor.js", "privacy.js"],
     "alias": {
       "jquery": "jquery/jquery/1.7.2/jquery.js",
       "detector": "arale/detector/1.0.1/detector"
