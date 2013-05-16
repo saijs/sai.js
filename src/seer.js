@@ -45,7 +45,7 @@
    * @return {String} 函数名。
    */
   function function_name(func){
-    var match = func.toString().match(RE_FUNCTION);
+    var match = String(func).match(RE_FUNCTION);
     return match && match.length!==0 ? match[1] : "anonymous";
   }
 
