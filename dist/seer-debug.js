@@ -58,8 +58,7 @@
   function stacktrace(call){
     var stack = [];
 
-    while(call.arguments && call.arguments.callee && call.arguments.callee.caller){
-      call = call.arguments.callee.caller;
+    while(call = call.arguments.callee.caller){
       stack.push("at " + function_name(call) + "()");
 
       // Because of a bug in Navigator 4.0, we need this line to break.
@@ -88,7 +87,7 @@
       file: file || "",
       line: line || 0,
       num: number || "",
-      stack: stack || "",
+      stack: stack,
       lost: lost_resources.join(",")
     };
     M._DATAS.push(data);

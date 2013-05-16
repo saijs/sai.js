@@ -1,4 +1,11 @@
 THEME = $(HOME)/.spm/themes/arale
+PROJ_ROOT=$(CURDIR)
+
+
+build:
+	@spm build
+	@googlecc ${PROJ_ROOT}/src/seer.js ${PROJ_ROOT}/dist/seer.js
+	@cp ${PROJ_ROOT}/src/seer.js ${PROJ_ROOT}/dist/seer-debug.js
 
 build-doc:
 	@nico build -v -C $(THEME)/nico.js
@@ -33,4 +40,3 @@ coverage:
 
 
 .PHONY: build-doc debug server publish clean test coverage
-

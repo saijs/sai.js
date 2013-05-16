@@ -60,7 +60,6 @@ seajs.use(["jquery", "monitor", "privacy"], function($, monitor, privacy){
 
 <script type="text/javascript">
 seajs.on("error", function(module){
-  console.log(module);
   monitor.lost(module.uri);
 });
 seajs.use("abc");
