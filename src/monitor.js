@@ -19,66 +19,70 @@ define(function(require, exports, module) {
   // UTILS -------------------------------------------------------
 
   function typeOf(obj){
-    return Object.prototype.toString.call(o);
+    return Object.prototype.toString.call(obj);
   }
 
   /**
-   * XXX:
-   * depth clone javascript objects.
-   * @param {Object} o, string, number, boolean, array, regexp, date, object.
-   * @return {Object} new object.
+   * 深度复制 JavaScript 对象。
+   *
+   * @param {Object} obj, 被复制的对象。
+   * @return {Object} obj 副本。
    */
-  function clone(o){
-    var r;
-    if(null==o){return null;}
-    switch(typeof o){
-      case 'string':
-      case 'number':
-      case 'boolean':
-        r = o;
-        break;
-      case 'object':
-        if(o instanceof Array){
-          r = [];
-          //r = Array.prototype.slice.call(o, 0);
-          for(var i=o.length-1; i>=0; i--){
-            r[i] = clone(o[i]);
-          }
-        }else if(o instanceof RegExp){
-          r = new RegExp(o.source, (o.ignoreCase?'i':'')+
-              (o.global?'g':'')+(o.multiline?'m':''));
-        }else if(o instanceof Date){
-          r = new Date(o.valueOf());
-        }else if(o instanceof Error){
-          o = r;
-        }else if(o instanceof Object){
-          r = {};
-          for(var k in o){
-            if(o.hasOwnProperty(k)){
-              r[k] = clone(o[k]);
-            }
-          }
+  function clone(obj){
+    var ret;
+    if(null === obj){return null;}
+    switch(typeOf(obj)){
+    case "[object String]":
+    case "object Number":
+    case "[object Boolean]":
+      ret = obj;
+      break;
+    case "[object Array]":
+      ret = [];
+      //ret = Array.prototype.slice.call(obj, 0);
+      for(var i=obj.length-1; i>=0; i--){
+        ret[i] = clone(obj[i]);
+      }
+      break;
+    case "[object RegExp]":
+      ret = new RegExp(obj.source, (obj.ignoreCase ? "i" : "")+
+        (obj.global ? "g" : "") + (obj.multiline ? "m" : ""));
+      break;
+    case "[object Date]":
+      ret = new Date(obj.valueOf());
+      break;
+    case "[object Error]":
+      obj = ret;
+      break;
+    case "[object Object]":
+      ret = {};
+      for(var k in obj){
+        if(has(obj, k)){
+          ret[k] = clone(obj[k]);
         }
-        break;
-      default:
-        throw new Error("Not support the type.");
+      }
+      break;
+    default:
+      throw new Error("Not support the type.");
     }
-    return r;
+    return ret;
   }
 
   /**
-   * merge object propertys to target.
-   * @param {Object} t, target object.
-   * @param {Object} o, source object.
-   * @return {Object} copy source object propertys to target object,
-   *          and return it.
+   * 合并 object 对象的属性到 target 对象。
+   *
+   * @param {Object} target, 目标对象。
+   * @param {Object} object, 来源对象。
+   * @return {Object} 返回目标对象，目标对象附带有来源对象的属性。
    */
-  function merge(t, o){
-    for(var k in o){
-      if(!Object.prototype.hasOwnProperty.call(o, k)){continue;}
-      t[k] = o[k];
+  function merge(target, object){
+    if(!object){return target;}
+    for(var k in object){
+      if(has(object, k)){
+        target[k] = object[k];
+      }
     }
-    return t;
+    return target;
   }
 
   /**
@@ -88,6 +92,7 @@ define(function(require, exports, module) {
   function rand(){
     return (""+Math.random()).slice(-6);
   }
+
   /**
    * 获得资源的路径（不带参数和 hash 部分）
    * 另外新版 Arale 通过 nginx 提供的服务，支持类似：
@@ -98,7 +103,7 @@ define(function(require, exports, module) {
    * @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
    */
   function path(uri){
-    if(undefined === uri || typeof(uri)!="string"){return "";}
+    if(undefined === uri || typeof(uri) !== "string"){return "";}
     var idx = uri.indexOf(";jsessionid=");
     if(idx >= 0){return uri.substr(0, idx);}
 
@@ -110,7 +115,7 @@ define(function(require, exports, module) {
     do{
       idx = uri.indexOf("?", idx);
       if(idx < 0){break;}
-      if("?" == uri.charAt(idx+1)){
+      if("?" === uri.charAt(idx+1)){
         idx += 2;
       }else{
         break;
@@ -120,28 +125,27 @@ define(function(require, exports, module) {
     return idx < 0 ? uri : uri.substr(0, idx);
   }
 
-  function innerText(elem){
-    if(!elem){return "";}
-    return elem.innerText || elem.textContent || "";
-  }
+  //function innerText(elem){
+    //if(!elem){return "";}
+    //return elem.innerText || elem.textContent || "";
+  //}
 
-  /**
-   * @param {Object} obj
-   * return {String}
-   */
+  // 将对象转为键值对参数字符串。
   function param(obj){
     if(Object.prototype.toString.call(obj) !== "[object Object]"){
       return "";
     }
     var p = [];
     for(var k in obj){
-      if(!obj.hasOwnProperty(k)){continue;}
-      //if(Object.prototype.toString.call(obj[k]) === "[object Array]"){
-        //p.push(k+"="+encodeURIComponent(obj[k]));
-        //p.push.apply(k+"="+encodeURIComponent(obj[k]));
-      //}else{
-        p.push(k+"="+encodeURIComponent(obj[k]));
-      //}
+      if(!has(obj,k)){continue;}
+      if(typeOf(obj[k]) === "[object Array]"){
+        for(var i=0,l=obj[k].length; i<l; i++){
+          // TODO: var encode = encodeURIComponent;
+          p.push(k + "=" + encodeURIComponent(obj[k][i]));
+        }
+      }else{
+        p.push(k + "=" + encodeURIComponent(obj[k]));
+      }
     }
     return p.join("&");
   }
@@ -163,7 +167,6 @@ define(function(require, exports, module) {
     url: url,
     ref: doc.referrer || "-",
     //sys: servName,
-    // XXX: 使用 detector v1.1.0 使用 full_version 属性。
     clnt: detector.device.name+"/"+detector.device.fullVersion+"|"+
       detector.os.name+"/"+detector.os.fullVersion+"|"+
       detector.browser.name+"/"+detector.browser.fullVersion+"|"+
@@ -174,16 +177,18 @@ define(function(require, exports, module) {
 
   /**
    * 创建图片请求发送数据。
+   *
    * @param {String} url, 日志服务器 URL 地址。
    * @param {Object} data, 附加的监控数据。
    * @param {Function} callback
    */
-  function send(url, data, callback){
+  function send(host, data, callback){
     if(!callback){callback = function(){};}
     if(!data){return callback();}
 
     var d = param(data);
-    var url = url+(url.indexOf("?")<0 ?"?":"&")+d;
+    var url = host + (host.indexOf("?") < 0 ? "?" : "&") + d;
+    // 忽略超长 url 请求，避免资源异常。
     if(url.length > URLLength){return callback();}
 
     // @see http://www.javascriptkit.com/jsref/image.shtml
@@ -220,15 +225,6 @@ define(function(require, exports, module) {
       sending = false;
       timedSend();
     });
-  }
-
-  /**
-   * 发送数据
-   */
-  function log(data){
-    if(!data){return;}
-
-    M._DATAS.push(data);
   }
 
   // timedSend 准备好后可以替换 push 方法，自动分时发送。
