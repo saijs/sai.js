@@ -23,15 +23,15 @@
    */
   M.log = function(seed, profile){
     if(!seed){return;}
-    var profile = profile || "log";
+    var p = profile || "log";
 
     // 兼容老版对产品监控的支持。
     if(arguments.length === 3){
-      profile = "product";
+      p = "product";
       seed = Array.prototype.join.call(arguments,"|");
     }
     var data = {
-      profile: profile,
+      profile: p,
       seed: String(seed)
     };
     M._DATAS.push(data);
@@ -65,7 +65,7 @@
       // Because of a bug in Navigator 4.0, we need this line to break.
       // c.caller will equal a rather than null when we reach the end
       // of the stack. The following line works around this.
-      if (call.caller == call) break;
+      if (call.caller === call) break;
     }
     return stack.join("\n");
   }
