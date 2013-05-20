@@ -5,7 +5,7 @@
  * @version 2013/05/02
  */
 
-define(function(require, exports, module){
+define(function(require, exports){
 
   var DATES = [0,31,28,31,30,31,30,31,31,30,31,30,31];
   function isLeap(year){
@@ -71,12 +71,12 @@ define(function(require, exports, module){
   function verify18(id){
     if(!/^[0-9]{17}[0-9xX]$/.test(id)){return false;}
 
-    var region = id.substr(0,6);
+    //var region = id.substr(0,6);
     var year = parseInt(id.substr(6,4), 10);
     var month = parseInt(id.substr(10,2), 10);
     var date = parseInt(id.substr(12,2), 10);
-    var rand = id.substr(14,2);
-    var sex = id.substr(16,1);
+    //var rand = id.substr(14,2);
+    //var sex = id.substr(16,1);
     var vcode = id.substr(17,1);
 
     if(!verifyDate(year, month, date)){return false;}
