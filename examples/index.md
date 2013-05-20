@@ -65,24 +65,24 @@ seajs.on("error", function(module){
 seajs.use("abc");
 
 seajs.use(["jquery", "monitor"], function($, monitor){
-  $("#btn-ex1").click(function(){
+  $("#btn-ex1").click(function(clickEx1){
     throw new Error("throw new error message.");
   });
-  $("#btn-ex2").click(function(){
+  $("#btn-ex2").click(function(clickEx2){
     monitor.error(new Error("log new error message."));
   });
-  $("#btn-ex3").click(function(){
-    function a2(){
+  $("#btn-ex3").click(function(clickEx3){
+    function a2(a2,a21,a22){
     try{
       notDefined();
     }catch(ex){
       monitor.error(ex);
     }
     }
-    function a1(){
-        a2();
+    function a1(a1){
+        a2(a2Call);
     }
-    a1();
+    a1(a1Call);
   });
   $("#btn3").click(function(){
     monitor.log("test-seed");
