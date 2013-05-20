@@ -20,3 +20,12 @@ window.onerror 中包含了异常消息、异常所在文件、和异常所在�
 * Firefox 19.0.2
 * Safari 6.0.4
 * Opera 12.15
+
+* http://html5.org/tools/web-apps-tracker?from=6956&to=6957
+* [Get the actual Javascript Error object with window.onerror](http://stackoverflow.com/questions/7099127/get-the-actual-javascript-error-object-with-window-onerror)
+* [[whatwg] window.onerror -ancient feature needs upgrade](http://lists.whatwg.org/pipermail/whatwg-whatwg.org/2008-August/015824.html)
+* [window.onerror](https://developer.mozilla.org/en-US/docs/DOM/window.onerror)
+* [Bug 355430 - Stack information of uncaught Error object should be available in window.onerror](https://bugzilla.mozilla.org/show_bug.cgi?id=355430)
+* [Bug 723020 - Implement a column argument to window.onerror](https://bugzilla.mozilla.org/show_bug.cgi?id=723020)
+* [Bug 13319 - Script errors should provide column position (add a fourth argument to onerror handler)](https://www.w3.org/Bugs/Public/show_bug.cgi?id=13319)
+* [Bug 101641 - Summary:	Add column information to window.onerror](https://bugs.webkit.org/show_bug.cgi?id=101641)
