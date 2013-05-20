@@ -24,6 +24,8 @@
 
 ## 参考
 
+* [ExceptionHub](http://www.exceptionhub.com/)
+* [TraceKit](https://github.com/csnover/TraceKit)
 * [Error Stack](http://www.errorstack.com/) - A Simple Way to Collect and Analyze Errors.
 * [http://damnit.jupiterit.com/](http://damnit.jupiterit.com/)
 * onload / onerror
