@@ -38,7 +38,7 @@
     return data;
   };
 
-  var RE_FUNCTION = /^function\s+(\w+)\s*\(/;
+  var RE_FUNCTION = /^function\b[^\)]+\)/;
   /**
    * 获得函数名。
    * @param {Function} func, 函数对象。
@@ -46,7 +46,7 @@
    */
   function function_name(func){
     var match = String(func).match(RE_FUNCTION);
-    return match && match.length!==0 ? match[1] : "anonymous";
+    return match ? match[0] : "";
   }
 
   /**
@@ -60,7 +60,7 @@
 
     while(call.arguments && call.arguments.callee && call.arguments.callee.caller){
       call = call.arguments.callee.caller;
-      stack.push("at " + function_name(call) + "()");
+      stack.push("at " + function_name(call));
 
       // Because of a bug in Navigator 4.0, we need this line to break.
       // c.caller will equal a rather than null when we reach the end
@@ -68,7 +68,7 @@
       if (call.caller == call) break;
     }
     return stack.join("\n");
-  };
+  }
 
   /**
    * JavaScript 异常统一处理函数。
