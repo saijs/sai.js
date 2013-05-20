@@ -5,7 +5,7 @@
  * @version 2013/05/02
  */
 
-define(function(require, exports, module){
+define(function(require, exports){
 
   // [电话号码规则](http://blog.csdn.net/sameplace/article/details/5054278)
   // @see [手机号码](http://baike.baidu.com/view/781667.htm)

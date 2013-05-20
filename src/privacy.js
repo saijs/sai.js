@@ -5,11 +5,11 @@
  * @version 2013/05/13
  */
 
-define(function(require, exports, module){
-  var $ = require("jquery");
+define(function(require, exports){
   var idcard = require("./idcard");
   var bankcard = require("./bankcard");
   var mobile = require("./mobilephone");
+  var monitor = require("./monitor");
 
   var re_privacy = /^(.{4}).*(.{4})$/;
 
