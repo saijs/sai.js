@@ -13,13 +13,16 @@ build-doc:
 debug:
 	@nico server -C $(THEME)/nico.js --watch debug
 
+publish: build
+	@spm publish -s alipay
+
 server:
 	@nico server -C $(THEME)/nico.js
 
 watch:
 	@nico server -C $(THEME)/nico.js --watch
 
-publish: clean build-doc
+publish-pages: clean build-doc
 	@ghp-import _site
 	@git push origin gh-pages
 
