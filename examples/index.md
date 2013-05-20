@@ -80,9 +80,9 @@ seajs.use(["jquery", "monitor"], function($, monitor){
     }
     }
     function a1(a1){
-        a2(a2Call);
+        a2(2);
     }
-    a1(a1Call);
+    a1(1);
   });
   $("#btn3").click(function(){
     monitor.log("test-seed");
