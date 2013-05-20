@@ -1,9 +1,9 @@
-define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-debug", "arale/detector/1.0.1/versioning-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.0/detector-debug" ], function(require, exports, module) {
     var win = window;
     var doc = document;
     var loc = window.location;
     var M = win.monitor;
-    var detector = require("arale/detector/1.0.1/detector-debug");
+    var detector = require("arale/detector/1.1.0/detector-debug");
     // 数据通信规范的版本。
     var version = "2.0";
     var LOG_SERVER = "https://magentmng.alipay.com/m.gif";
@@ -14,45 +14,51 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
     var monitoring = false;
     // UTILS -------------------------------------------------------
     function typeOf(obj) {
-        return Object.prototype.toString.call(o);
+        return Object.prototype.toString.call(obj);
     }
     /**
-   * XXX:
-   * depth clone javascript objects.
-   * @param {Object} o, string, number, boolean, array, regexp, date, object.
-   * @return {Object} new object.
+   * 深度复制 JavaScript 对象。
+   *
+   * @param {Object} obj, 被复制的对象。
+   * @return {Object} obj 副本。
    */
-    function clone(o) {
-        var r;
-        if (null == o) {
+    function clone(obj) {
+        var ret;
+        if (null === obj) {
             return null;
         }
-        switch (typeof o) {
-          case "string":
-          case "number":
-          case "boolean":
-            r = o;
+        switch (typeOf(obj)) {
+          case "[object String]":
+          case "object Number":
+          case "[object Boolean]":
+            ret = obj;
             break;
 
-          case "object":
-            if (o instanceof Array) {
-                r = [];
-                //r = Array.prototype.slice.call(o, 0);
-                for (var i = o.length - 1; i >= 0; i--) {
-                    r[i] = clone(o[i]);
-                }
-            } else if (o instanceof RegExp) {
-                r = new RegExp(o.source, (o.ignoreCase ? "i" : "") + (o.global ? "g" : "") + (o.multiline ? "m" : ""));
-            } else if (o instanceof Date) {
-                r = new Date(o.valueOf());
-            } else if (o instanceof Error) {
-                o = r;
-            } else if (o instanceof Object) {
-                r = {};
-                for (var k in o) {
-                    if (o.hasOwnProperty(k)) {
-                        r[k] = clone(o[k]);
-                    }
+          case "[object Array]":
+            ret = [];
+            //ret = Array.prototype.slice.call(obj, 0);
+            for (var i = obj.length - 1; i >= 0; i--) {
+                ret[i] = clone(obj[i]);
+            }
+            break;
+
+          case "[object RegExp]":
+            ret = new RegExp(obj.source, (obj.ignoreCase ? "i" : "") + (obj.global ? "g" : "") + (obj.multiline ? "m" : ""));
+            break;
+
+          case "[object Date]":
+            ret = new Date(obj.valueOf());
+            break;
+
+          case "[object Error]":
+            obj = ret;
+            break;
+
+          case "[object Object]":
+            ret = {};
+            for (var k in obj) {
+                if (has(obj, k)) {
+                    ret[k] = clone(obj[k]);
                 }
             }
             break;
@@ -60,23 +66,25 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
           default:
             throw new Error("Not support the type.");
         }
-        return r;
+        return ret;
     }
     /**
-   * merge object propertys to target.
-   * @param {Object} t, target object.
-   * @param {Object} o, source object.
-   * @return {Object} copy source object propertys to target object,
-   *          and return it.
+   * 合并 object 对象的属性到 target 对象。
+   *
+   * @param {Object} target, 目标对象。
+   * @param {Object} object, 来源对象。
+   * @return {Object} 返回目标对象，目标对象附带有来源对象的属性。
    */
-    function merge(t, o) {
-        for (var k in o) {
-            if (!Object.prototype.hasOwnProperty.call(o, k)) {
-                continue;
-            }
-            t[k] = o[k];
+    function merge(target, object) {
+        if (!object) {
+            return target;
         }
-        return t;
+        for (var k in object) {
+            if (has(object, k)) {
+                target[k] = object[k];
+            }
+        }
+        return target;
     }
     /**
    * simple random string.
@@ -95,7 +103,7 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
    * @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
    */
     function path(uri) {
-        if (undefined === uri || typeof uri != "string") {
+        if (undefined === uri || typeof uri !== "string") {
             return "";
         }
         var idx = uri.indexOf(";jsessionid=");
@@ -111,7 +119,7 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
             if (idx < 0) {
                 break;
             }
-            if ("?" == uri.charAt(idx + 1)) {
+            if ("?" === uri.charAt(idx + 1)) {
                 idx += 2;
             } else {
                 break;
@@ -119,30 +127,28 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
         } while (idx >= 0);
         return idx < 0 ? uri : uri.substr(0, idx);
     }
-    function innerText(elem) {
-        if (!elem) {
-            return "";
-        }
-        return elem.innerText || elem.textContent || "";
-    }
-    /**
-   * @param {Object} obj
-   * return {String}
-   */
+    //function innerText(elem){
+    //if(!elem){return "";}
+    //return elem.innerText || elem.textContent || "";
+    //}
+    // 将对象转为键值对参数字符串。
     function param(obj) {
         if (Object.prototype.toString.call(obj) !== "[object Object]") {
             return "";
         }
         var p = [];
         for (var k in obj) {
-            if (!obj.hasOwnProperty(k)) {
+            if (!has(obj, k)) {
                 continue;
             }
-            //if(Object.prototype.toString.call(obj[k]) === "[object Array]"){
-            //p.push(k+"="+encodeURIComponent(obj[k]));
-            //p.push.apply(k+"="+encodeURIComponent(obj[k]));
-            //}else{
-            p.push(k + "=" + encodeURIComponent(obj[k]));
+            if (typeOf(obj[k]) === "[object Array]") {
+                for (var i = 0, l = obj[k].length; i < l; i++) {
+                    // TODO: var encode = encodeURIComponent;
+                    p.push(k + "=" + encodeURIComponent(obj[k][i]));
+                }
+            } else {
+                p.push(k + "=" + encodeURIComponent(obj[k]));
+            }
         }
         return p.join("&");
     }
@@ -160,17 +166,17 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
         url: url,
         ref: doc.referrer || "-",
         //sys: servName,
-        // XXX: 使用 detector v1.1.0 使用 full_version 属性。
-        clnt: detector.device.name + "/" + String(detector.device.version) + "|" + detector.os.name + "/" + String(detector.os.version) + "|" + detector.browser.name + "/" + String(detector.browser.version) + "|" + detector.engine.name + "/" + String(detector.engine.version),
+        clnt: detector.device.name + "/" + detector.device.fullVersion + "|" + detector.os.name + "/" + detector.os.fullVersion + "|" + detector.browser.name + "/" + detector.browser.fullVersion + "|" + detector.engine.name + "/" + detector.engine.fullVersion,
         v: version
     };
     /**
    * 创建图片请求发送数据。
+   *
    * @param {String} url, 日志服务器 URL 地址。
    * @param {Object} data, 附加的监控数据。
    * @param {Function} callback
    */
-    function send(url, data, callback) {
+    function send(host, data, callback) {
         if (!callback) {
             callback = function() {};
         }
@@ -178,7 +184,8 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
             return callback();
         }
         var d = param(data);
-        var url = url + (url.indexOf("?") < 0 ? "?" : "&") + d;
+        var url = host + (host.indexOf("?") < 0 ? "?" : "&") + d;
+        // 忽略超长 url 请求，避免资源异常。
         if (url.length > URLLength) {
             return callback();
         }
@@ -217,15 +224,6 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.0.1/detector-de
             sending = false;
             timedSend();
         });
-    }
-    /**
-   * 发送数据
-   */
-    function log(data) {
-        if (!data) {
-            return;
-        }
-        M._DATAS.push(data);
     }
     // timedSend 准备好后可以替换 push 方法，自动分时发送。
     var _push = M._DATAS.push;

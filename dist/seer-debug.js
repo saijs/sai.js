@@ -23,22 +23,22 @@
    */
   M.log = function(seed, profile){
     if(!seed){return;}
-    var profile = profile || "log";
+    var p = profile || "log";
 
     // 兼容老版对产品监控的支持。
     if(arguments.length === 3){
-      profile = "product";
+      p = "product";
       seed = Array.prototype.join.call(arguments,"|");
     }
     var data = {
-      profile: profile,
+      profile: p,
       seed: String(seed)
     };
     M._DATAS.push(data);
     return data;
   };
 
-  var RE_FUNCTION = /^function\s+(\w+)\s*\(/;
+  var RE_FUNCTION = /^function\b[^\)]+\)/;
   /**
    * 获得函数名。
    * @param {Function} func, 函数对象。
@@ -46,7 +46,7 @@
    */
   function function_name(func){
     var match = String(func).match(RE_FUNCTION);
-    return match && match.length!==0 ? match[1] : "anonymous";
+    return match ? match[0] : "";
   }
 
   /**
@@ -58,16 +58,17 @@
   function stacktrace(call){
     var stack = [];
 
-    while(call = call.arguments.callee.caller){
-      stack.push("at " + function_name(call) + "()");
+    while(call.arguments && call.arguments.callee && call.arguments.callee.caller){
+      call = call.arguments.callee.caller;
+      stack.push("at " + function_name(call));
 
       // Because of a bug in Navigator 4.0, we need this line to break.
       // c.caller will equal a rather than null when we reach the end
       // of the stack. The following line works around this.
-      if (call.caller == call) break;
+      if (call.caller === call) break;
     }
     return stack.join("\n");
-  };
+  }
 
   /**
    * JavaScript 异常统一处理函数。
@@ -87,7 +88,7 @@
       file: file || "",
       line: line || 0,
       num: number || "",
-      stack: stack,
+      stack: stack || "",
       lost: lost_resources.join(",")
     };
     M._DATAS.push(data);
