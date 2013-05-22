@@ -5,6 +5,12 @@ define(function(require, exports, module) {
   var loc = window.location;
   var M = win.monitor;
 
+  // 避免未引用先行脚本抛出异常。
+  if(!win.monitor){
+    M = window.monitor = {};
+    M._DATAS = [];
+  }
+
   var detector = require("detector");
 
   // 数据通信规范的版本。
