@@ -10,7 +10,7 @@
   "keywords": ["widget"],
   "licenses": "MIT",
   "spm": {
-    "output": ["dist/monitor.js", "dist/privacy.js"],
+    "output": ["monitor.js", "privacy.js"],
     "alias": {
       "detector": "arale/detector/1.1.0/detector"
     }
