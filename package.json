@@ -12,7 +12,7 @@
   "spm": {
     "output": ["monitor.js", "privacy.js"],
     "alias": {
-      "detector": "arale/detector/1.1.0/detector"
+      "detector": "arale/detector/1.1.1/detector"
     }
   }
 }
