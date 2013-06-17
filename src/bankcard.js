@@ -29,7 +29,7 @@ define(function(require, exports){
     return sum % 10 === 0;
   }
 
-  var re_card = /^[0-9]{13,19}$/;
+  var re_card = /^[34569][0-9]{12,18}$/;
 
 
   /**

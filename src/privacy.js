@@ -11,15 +11,18 @@ define(function(require, exports){
   var mobile = require("./mobilephone");
   var monitor = require("./monitor");
 
-  var re_privacy = /^(.{4}).*(.{4})$/;
+  var re_privacy = {
+    "6...4": /^(.{6}).*(.{4})$/,
+    "3...4": /^(.{3}).*(.{4})$/
+  };
 
   /**
    * 对银行卡号码进行隐私包含。
    * @param {String} card, 需要进行隐私保密的银行卡号码。
    * @return {String} 隐私保密处理后的银行卡号码。
    */
-  function privacy(card){
-    return String(card).replace(re_privacy, "$1...$2");
+  function privacy(card, length){
+    return String(card).replace(re_privacy[length], "$1...$2");
   }
 
   exports.scan = function(html){
@@ -29,11 +32,11 @@ define(function(require, exports){
     for(var i=0,card,l=m.length; i<l; i++){
       card = m[i];
       if(mobile.verify(card)){
-        monitor.log("mobile="+privacy(card), "sens");
+        monitor.log("mobile="+privacy(card, "3...4"), "sens");
       }else if(idcard.verify(card)){
-        monitor.log("idcard="+privacy(card), "sens");
+        monitor.log("idcard="+privacy(card, "6...4"), "sens");
       }else if(bankcard.verify(card)){
-        monitor.log("bankcard="+privacy(card), "sens");
+        monitor.log("bankcard="+privacy(card, "6...4"), "sens");
       }
     }
   };
