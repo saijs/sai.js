@@ -1,4 +1,4 @@
-define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.0/detector-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-debug" ], function(require, exports, module) {
     var win = window;
     var doc = document;
     var loc = window.location;
@@ -8,7 +8,7 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.0/detector-de
         M = window.monitor = {};
         M._DATAS = [];
     }
-    var detector = require("arale/detector/1.1.0/detector-debug");
+    var detector = require("arale/detector/1.1.1/detector-debug");
     // 数据通信规范的版本。
     var version = "2.0";
     var LOG_SERVER = "https://magentmng.alipay.com/m.gif";

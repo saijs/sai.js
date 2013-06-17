@@ -4,7 +4,7 @@
  * @author 闲耘™ (hotoo.cn[AT]gmail.com)
  * @version 2013/05/13
  */
-define("alipay/monitor/2.0.0/privacy-debug", [ "./idcard-debug", "./bankcard-debug", "./mobilephone-debug", "./monitor-debug", "arale/detector/1.1.0/detector-debug" ], function(require, exports) {
+define("alipay/monitor/2.0.0/privacy-debug", [ "./idcard-debug", "./bankcard-debug", "./mobilephone-debug", "./monitor-debug", "arale/detector/1.1.1/detector-debug" ], function(require, exports) {
     var idcard = require("./idcard-debug");
     var bankcard = require("./bankcard-debug");
     var mobile = require("./mobilephone-debug");
@@ -198,7 +198,7 @@ define("alipay/monitor/2.0.0/mobilephone-debug", [], function(require, exports) 
     };
 });
 
-define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.0/detector-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-debug" ], function(require, exports, module) {
     var win = window;
     var doc = document;
     var loc = window.location;
@@ -208,7 +208,7 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.0/detector-de
         M = window.monitor = {};
         M._DATAS = [];
     }
-    var detector = require("arale/detector/1.1.0/detector-debug");
+    var detector = require("arale/detector/1.1.1/detector-debug");
     // 数据通信规范的版本。
     var version = "2.0";
     var LOG_SERVER = "https://magentmng.alipay.com/m.gif";
