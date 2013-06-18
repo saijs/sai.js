@@ -11,38 +11,24 @@ button{
 
 <script type="text/javascript" src="../src/seer.js"></script>
 
-* 明文手机号：13912345678, 18612345678
-* 明文身份证：36048119881214202X
-* 明文银行卡：6225885718336811
-
-
 
 ````javascript
-seajs.use(["jquery", "monitor", "privacy"], function($, monitor, privacy){
+(function(){
 
-  // 命中率：[0,1]: 实际对应采样率：[0%,100%]
-  var rate = 1;
-
-  /**
-   * 随机采样命中算法。
-   * @param {Nuber} rate, 采样率，[0,1] 区间的数值。
-   * @return {Boolean}
-   */
+  // 随机采样命中算法。
+  // @param {Nuber} rate, 采样率，[0,1] 区间的数值。
+  // @return {Boolean}
   function hit(rate){
     return 0 === Math.floor(Math.random() / rate);
   };
 
-  if(!hit(1)){return;}
-
-  // 启动监控。
-  monitor.boot();
-
-  $(function(){
-    var html = (document.documentElement || document.body).innerHTML;
-    privacy.scan(html);
+  // 命中率：[0,1]: 实际对应采样率：[0%,100%]
+  var rate = 1;
+  if(!hit(rate)){return;}
+  seajs.use("monitor", function(monitor){
+    monitor.boot(); // 启动监控。
   });
-
-});
+})();
 ````
 
 ----
