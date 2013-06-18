@@ -22,6 +22,10 @@ server:
 watch:
 	@nico server -C $(THEME)/nico.js --watch
 
+publish-doc: clean build-doc
+	@rm -fr _site/sea-modules
+	@spm publish --doc _site -s alipay
+
 publish-pages: clean build-doc
 	@ghp-import _site
 	@git push origin gh-pages
