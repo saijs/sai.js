@@ -136,6 +136,13 @@ define(function(require, exports, module) {
     //return elem.innerText || elem.textContent || "";
   //}
 
+  // 必要的字符串转义，保证发送的数据是安全的。
+  // @param {String} str.
+  // @return {String}
+  function escapeString(str){
+    return String(str).replace(/(?:\r\n|\r|\n)/g,"<CR>");
+  }
+
   // 将对象转为键值对参数字符串。
   function param(obj){
     if(Object.prototype.toString.call(obj) !== "[object Object]"){
@@ -146,11 +153,10 @@ define(function(require, exports, module) {
       if(!has(obj,k)){continue;}
       if(typeOf(obj[k]) === "[object Array]"){
         for(var i=0,l=obj[k].length; i<l; i++){
-          // TODO: var encode = encodeURIComponent;
-          p.push(k + "=" + encodeURIComponent(obj[k][i]));
+          p.push(k + "=" + encodeURIComponent(escapeString(obj[k][i])));
         }
       }else{
-        p.push(k + "=" + encodeURIComponent(obj[k]));
+        p.push(k + "=" + encodeURIComponent(escapeString(obj[k])));
       }
     }
     return p.join("&");
