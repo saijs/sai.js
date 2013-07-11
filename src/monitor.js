@@ -182,7 +182,8 @@ define(function(require, exports, module) {
     clnt: detector.device.name+"/"+detector.device.fullVersion+"|"+
       detector.os.name+"/"+detector.os.fullVersion+"|"+
       detector.browser.name+"/"+detector.browser.fullVersion+"|"+
-      detector.engine.name+"/"+detector.engine.fullVersion,
+      detector.engine.name+"/"+detector.engine.fullVersion+
+      detector.browser.compatible?"|c":"",
     v: version
   };
 
