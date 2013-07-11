@@ -186,7 +186,7 @@ define(function(require, exports, module) {
       detector.os.name+"/"+detector.os.fullVersion+"|"+
       detector.browser.name+"/"+detector.browser.fullVersion+"|"+
       detector.engine.name+"/"+detector.engine.fullVersion+
-      detector.browser.compatible?"|c":"",
+      (detector.browser.compatible?"|c":""),
     v: version
   };
 
