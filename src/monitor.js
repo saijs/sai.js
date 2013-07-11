@@ -108,25 +108,29 @@ define(function(require, exports, module) {
    * @param {String} uri, 仅处理绝对路径。
    * @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
    */
+
   function path(uri){
     if(undefined === uri || typeof(uri) !== "string"){return "";}
-    var idx = uri.indexOf(";jsessionid=");
-    if(idx >= 0){return uri.substr(0, idx);}
+    var len = uri.length;
 
-    // white-list for min services.
-    if(uri.indexOf("/min/?")>=0){
-      return uri;
+    var idxSessionID = uri.indexOf(";jsessionid=");
+    if(idxSessionID < 0){idxSessionID = len;}
+
+    // 旧版的合并 HTTP 服务。
+    var idxMin = uri.indexOf("/min/?");
+    if(idxMin >= 0){
+      idxMin = uri.indexOf("?", idxMin);
     }
+    if(idxMin < 0){idxMin = len;}
 
-    do{
-      idx = uri.indexOf("?", idx);
-      if(idx < 0){break;}
-      if("?" === uri.charAt(idx+1)){
-        idx += 2;
-      }else{
-        break;
-      }
-    }while(idx >= 0);
+    var idxHash = uri.indexOf("#");
+    if(idxHash < 0){idxHash = len;}
+
+    var idxQ = uri.indexOf("??");
+    idxQ = uri.indexOf("?", idxQ < 0 ? 0 : idxQ+2);
+    if(idxQ < 0){idxQ = len;}
+
+    var idx = Math.min(idxSessionID, idxMin, idxHash, idxQ);
 
     return idx < 0 ? uri : uri.substr(0, idx);
   }
