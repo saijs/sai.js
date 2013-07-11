@@ -1,4 +1,4 @@
-define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.1.0/monitor-debug", [ "arale/detector/1.2.1/detector-debug" ], function(require, exports, module) {
     var win = window;
     var doc = document;
     var loc = window.location;
@@ -8,7 +8,7 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-de
         M = window.monitor = {};
         M._DATAS = [];
     }
-    var detector = require("arale/detector/1.1.1/detector-debug");
+    var detector = require("arale/detector/1.2.1/detector-debug");
     // 数据通信规范的版本。
     var version = "2.0";
     var LOG_SERVER = "https://magentmng.alipay.com/m.gif";
@@ -111,31 +111,41 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-de
         if (undefined === uri || typeof uri !== "string") {
             return "";
         }
-        var idx = uri.indexOf(";jsessionid=");
-        if (idx >= 0) {
-            return uri.substr(0, idx);
+        var len = uri.length;
+        var idxSessionID = uri.indexOf(";jsessionid=");
+        if (idxSessionID < 0) {
+            idxSessionID = len;
         }
-        // white-list for min services.
-        if (uri.indexOf("/min/?") >= 0) {
-            return uri;
+        // 旧版的合并 HTTP 服务。
+        var idxMin = uri.indexOf("/min/?");
+        if (idxMin >= 0) {
+            idxMin = uri.indexOf("?", idxMin);
         }
-        do {
-            idx = uri.indexOf("?", idx);
-            if (idx < 0) {
-                break;
-            }
-            if ("?" === uri.charAt(idx + 1)) {
-                idx += 2;
-            } else {
-                break;
-            }
-        } while (idx >= 0);
+        if (idxMin < 0) {
+            idxMin = len;
+        }
+        var idxHash = uri.indexOf("#");
+        if (idxHash < 0) {
+            idxHash = len;
+        }
+        var idxQ = uri.indexOf("??");
+        idxQ = uri.indexOf("?", idxQ < 0 ? 0 : idxQ + 2);
+        if (idxQ < 0) {
+            idxQ = len;
+        }
+        var idx = Math.min(idxSessionID, idxMin, idxHash, idxQ);
         return idx < 0 ? uri : uri.substr(0, idx);
     }
     //function innerText(elem){
     //if(!elem){return "";}
     //return elem.innerText || elem.textContent || "";
     //}
+    // 必要的字符串转义，保证发送的数据是安全的。
+    // @param {String} str.
+    // @return {String}
+    function escapeString(str) {
+        return String(str).replace(/(?:\r\n|\r|\n)/g, "<CR>");
+    }
     // 将对象转为键值对参数字符串。
     function param(obj) {
         if (Object.prototype.toString.call(obj) !== "[object Object]") {
@@ -148,11 +158,10 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-de
             }
             if (typeOf(obj[k]) === "[object Array]") {
                 for (var i = 0, l = obj[k].length; i < l; i++) {
-                    // TODO: var encode = encodeURIComponent;
-                    p.push(k + "=" + encodeURIComponent(obj[k][i]));
+                    p.push(k + "=" + encodeURIComponent(escapeString(obj[k][i])));
                 }
             } else {
-                p.push(k + "=" + encodeURIComponent(obj[k]));
+                p.push(k + "=" + encodeURIComponent(escapeString(obj[k])));
             }
         }
         return p.join("&");
@@ -169,9 +178,8 @@ define("alipay/monitor/2.0.0/monitor-debug", [ "arale/detector/1.1.1/detector-de
     //}
     var DEFAULT_DATA = {
         url: url,
-        ref: doc.referrer || "-",
-        //sys: servName,
-        clnt: detector.device.name + "/" + detector.device.fullVersion + "|" + detector.os.name + "/" + detector.os.fullVersion + "|" + detector.browser.name + "/" + detector.browser.fullVersion + "|" + detector.engine.name + "/" + detector.engine.fullVersion,
+        ref: path(doc.referrer) || "-",
+        clnt: detector.device.name + "/" + detector.device.fullVersion + "|" + detector.os.name + "/" + detector.os.fullVersion + "|" + detector.browser.name + "/" + detector.browser.fullVersion + "|" + detector.engine.name + "/" + detector.engine.fullVersion + (detector.browser.compatible ? "|c" : ""),
         v: version
     };
     /**
