@@ -43,6 +43,9 @@ button{
 
 <button type="button" id="btn3">monitor.log(seed)</button>
 <button type="button" id="btn4">monitor.log(seed, profile)</button>
+<button type="button" id="btn5">monitor.log(productLine, product, code)</button>
+<button type="button" id="btn6">monitor.log(Object)</button>
+<button type="button" id="btn7">monitor.log({profile})</button>
 
 <script type="text/javascript">
 seajs.on("error", function(module){
@@ -75,6 +78,22 @@ seajs.use(["jquery", "monitor"], function($, monitor){
   });
   $("#btn4").click(function(){
     monitor.log("test-seed", "test-profile");
+  });
+  $("#btn5").click(function(){
+    monitor.log("productLine", "product", "code");
+  });
+  $("#btn6").click(function(){
+    monitor.log({
+      "userKey": 0,
+      "key2": "2"
+    });
+  });
+  $("#btn7").click(function(){
+    monitor.log({
+      "userKey": 0,
+      "key2": "2",
+      "profile": "user-profile"
+    });
   });
 });
 </script>
