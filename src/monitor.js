@@ -177,8 +177,7 @@ define(function(require, exports, module) {
 
   var DEFAULT_DATA = {
     url: url,
-    ref: doc.referrer || "-",
-    //sys: servName,
+    ref: path(doc.referrer) || "-",
     clnt: detector.device.name+"/"+detector.device.fullVersion+"|"+
       detector.os.name+"/"+detector.os.fullVersion+"|"+
       detector.browser.name+"/"+detector.browser.fullVersion+"|"+
