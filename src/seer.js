@@ -15,6 +15,7 @@
     lost_resources.push(uri);
   };
 
+  var DEFAULT_PROFILE = "log";
   /**
    * 通用监控接口。
    * @param {String} seed, 监控点。
@@ -23,17 +24,24 @@
    */
   M.log = function(seed, profile){
     if(!seed){return;}
-    var p = profile || "log";
+    var data;
+    var p; // profile.
+    if(Object.prototype.toString.call(seed) === "[object Object]"){
+      data = seed;
+      data.profile = seed.profile || DEFAULT_PROFILE;
+    }else{
+      p = profile || DEFAULT_PROFILE;
 
-    // 兼容老版对产品监控的支持。
-    if(arguments.length === 3){
-      p = "product";
-      seed = Array.prototype.join.call(arguments,"|");
+      // 兼容老版对产品监控的支持。
+      if(arguments.length === 3){
+        p = "product";
+        seed = Array.prototype.join.call(arguments,"|");
+      }
+      data = {
+        profile: p,
+        seed: String(seed)
+      };
     }
-    var data = {
-      profile: p,
-      seed: String(seed)
-    };
     M._DATAS.push(data);
     return data;
   };
