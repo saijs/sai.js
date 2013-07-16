@@ -10,7 +10,7 @@
   "keywords": ["utility"],
   "licenses": "MIT",
   "scripts": {
-    "prepublish": "spm build"
+    "prepublish": "make build"
   },
   "spm": {
     "output": ["monitor.js"],
