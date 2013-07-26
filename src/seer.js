@@ -1,7 +1,7 @@
-(function() {
-  if(window.monitor){return;}
+(function(global) {
+  if(global.monitor){return;}
 
-  var M = window.monitor = {};
+  var M = global.monitor = {};
   M._DATAS = [];
 
   var lost_resources = [];
@@ -120,9 +120,9 @@
    *                   返回 `false` 则控制台不捕获异常。
    *                   建议返回 `false`。
    */
-  window.onerror = function(message, file, line) {
+  global.onerror = function(message, file, line) {
     error(message, file, line);
     return false;
   };
 
-})();
+})(this);
