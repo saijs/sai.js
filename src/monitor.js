@@ -2,16 +2,27 @@ define(function(require, exports, module) {
 
   var win = window;
   var doc = document;
-  var loc = window.location;
+  var loc = win.location;
   var M = win.monitor;
+
+  var detector = require("detector");
+  var Events = require("events");
 
   // 避免未引用先行脚本抛出异常。
   if(!win.monitor){
-    M = window.monitor = {};
+    M = win.monitor = {};
     M._DATAS = [];
+    M._EVENTS = [];
   }
 
-  var detector = require("detector");
+  var _on = M.on;
+  var _evt = new Events();
+  M.on = function(evt, handler){
+    _evt.on(evt, handler);
+  };
+  for(var i=0,l=_on.length; i<l; i++){
+    M.on(_on[i][0], _on[i][1]);
+  }
 
   // 数据通信规范的版本。
   var version = "2.0";
@@ -235,6 +246,9 @@ define(function(require, exports, module) {
     if(e.profile === "jserror"){
       e.file = path(e.file);
     }
+
+    M.trigger(e.profile, data);
+
     data = merge(data, e);
     data.rnd = rand(); // 避免缓存。
     send(LOG_SERVER, data, function(){
@@ -260,6 +274,6 @@ define(function(require, exports, module) {
     monitoring = (state !== false);
   };
 
-  window.monitor = M;
+  win.monitor = M;
   module.exports = M;
 });
