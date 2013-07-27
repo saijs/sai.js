@@ -15,6 +15,11 @@
     lost_resources.push(uri);
   };
 
+  var EVENTS = M._EVENTS = [];
+  M.on = function(evt, handler){
+    EVENTS.push([evt, handler]);
+  };
+
   var DEFAULT_PROFILE = "log";
   /**
    * 通用监控接口。
