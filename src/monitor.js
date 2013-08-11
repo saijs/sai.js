@@ -15,7 +15,7 @@ define(function(require, exports, module) {
     M._EVENTS = [];
   }
 
-  var _on = M.on;
+  var _on = M._EVENTS;
   var _evt = new Events();
   M.on = function(evt, handler){
     _evt.on(evt, handler);
