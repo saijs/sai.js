@@ -1,14 +1,24 @@
-define("alipay/monitor/2.1.0/monitor-debug", [ "arale/detector/1.2.1/detector-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.2.0/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
     var win = window;
     var doc = document;
-    var loc = window.location;
+    var loc = win.location;
     var M = win.monitor;
+    var detector = require("arale/detector/1.2.1/detector-debug");
+    var Events = require("arale/events/1.1.0/events-debug");
     // 避免未引用先行脚本抛出异常。
     if (!win.monitor) {
-        M = window.monitor = {};
+        M = win.monitor = {};
         M._DATAS = [];
+        M._EVENTS = [];
     }
-    var detector = require("arale/detector/1.2.1/detector-debug");
+    var _events = M._EVENTS;
+    var _evt = new Events();
+    M.on = function(evt, handler) {
+        _evt.on(evt, handler);
+    };
+    for (var i = 0, l = _events.length; i < l; i++) {
+        M.on(_events[i][0], _events[i][1]);
+    }
     // 数据通信规范的版本。
     var version = "2.0";
     var LOG_SERVER = "https://magentmng.alipay.com/m.gif";
@@ -233,6 +243,8 @@ define("alipay/monitor/2.1.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
         data = merge(data, e);
         data.rnd = rand();
         // 避免缓存。
+        _evt.trigger("*", data);
+        _evt.trigger(e.profile, data);
         send(LOG_SERVER, data, function() {
             sending = false;
             timedSend();
@@ -253,6 +265,6 @@ define("alipay/monitor/2.1.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
     M.boot = function(state) {
         monitoring = state !== false;
     };
-    window.monitor = M;
+    win.monitor = M;
     module.exports = M;
 });
