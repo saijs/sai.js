@@ -1,7 +1,7 @@
-(function() {
-  if(window.monitor){return;}
+(function(global) {
+  if(global.monitor){return;}
 
-  var M = window.monitor = {};
+  var M = global.monitor = {};
   M._DATAS = [];
 
   var lost_resources = [];
@@ -14,6 +14,12 @@
     _lost_resources[uri] = true;
     lost_resources.push(uri);
   };
+
+  var EVENTS = M._EVENTS = [];
+  M.on = function(evt, handler){
+    EVENTS.push([evt, handler]);
+  };
+  M.off = function(){};
 
   var DEFAULT_PROFILE = "log";
   /**
@@ -72,6 +78,7 @@
     return stack.join("\n");
   }
 
+  var ERROR_CACHE = {};
   /**
    * JavaScript 异常统一处理函数。
    * @param {String} message, 异常消息。
@@ -93,6 +100,11 @@
       stack: stack || "",
       lost: lost_resources.join(",")
     };
+    var key = file+":"+line+":"+message;
+    if(!ERROR_CACHE.hasOwnProperty(key)){
+      data.uv = 1;
+      ERROR_CACHE[key] = true;
+    }
     M._DATAS.push(data);
     return data;
   }
@@ -120,9 +132,9 @@
    *                   返回 `false` 则控制台不捕获异常。
    *                   建议返回 `false`。
    */
-  window.onerror = function(message, file, line) {
+  global.onerror = function(message, file, line) {
     error(message, file, line);
     return false;
   };
 
-})();
+})(this);
