@@ -78,6 +78,7 @@
     return stack.join("\n");
   }
 
+  var ERROR_CACHE = {};
   /**
    * JavaScript 异常统一处理函数。
    * @param {String} message, 异常消息。
@@ -99,6 +100,11 @@
       stack: stack || "",
       lost: lost_resources.join(",")
     };
+    var key = file+":"+line+":"+message;
+    if(!ERROR_CACHE.hasOwnProperty(key)){
+      data.uv = 1;
+      ERROR_CACHE[key] = true;
+    }
     M._DATAS.push(data);
     return data;
   }
