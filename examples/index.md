@@ -33,7 +33,7 @@ button{
 
 ----
 
-<script type="text/javascript" onerror="monitor.lost(this.src)" src="123.js"></script>
+<script type="text/javascript" onerror="window.monitor && monitor.lost(this.src)" src="http://example.com/123.js"></script>
 
 <button type="button" id="btn-ex1">throw new Error()</button>
 <button type="button" id="btn-ex2">monitor.error(new Error())</button>
@@ -49,9 +49,11 @@ button{
 
 <script type="text/javascript">
 seajs.on("error", function(module){
-  monitor.lost(module.uri);
+  if(module.status === 5){
+    window.monitor && monitor.lost(module.uri);
+  }
 });
-seajs.use("abc");
+seajs.use("http://www.example.com/abc");
 
 seajs.use(["jquery", "monitor"], function($, monitor){
   $("#btn-ex1").click(function(clickEx1){
