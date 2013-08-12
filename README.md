@@ -66,3 +66,4 @@ JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScri
 
 * `*`: 发送所有类型的数据都会触发。
 * `jserror`: 发送 JavaScript 异常数据前触发。
+* `log`: 发送自定义 log 监控数据会触发。
