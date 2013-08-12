@@ -19,6 +19,7 @@
   M.on = function(evt, handler){
     EVENTS.push([evt, handler]);
   };
+  M.off = function(){};
 
   var DEFAULT_PROFILE = "log";
   /**

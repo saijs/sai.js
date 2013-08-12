@@ -55,3 +55,14 @@ JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScri
 
 * `seed`: 监控点。
 * `profile`: 日志类型，默认为 `log`。
+
+### monitor.log(Object data)
+
+可以发送任意自定义键值对的数据类型。
+
+### monitor.on(String eventName, Function handler)
+
+监控到特定类型的数据会触发的特定事件。内置支持的事件类型包括：
+
+* `*`: 发送所有类型的数据都会触发。
+* `jserror`: 发送 JavaScript 异常数据前触发。
