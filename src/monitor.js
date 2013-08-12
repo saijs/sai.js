@@ -15,13 +15,13 @@ define(function(require, exports, module) {
     M._EVENTS = [];
   }
 
-  var _on = M._EVENTS;
+  var _events = M._EVENTS;
   var _evt = new Events();
   M.on = function(evt, handler){
     _evt.on(evt, handler);
   };
-  for(var i=0,l=_on.length; i<l; i++){
-    M.on(_on[i][0], _on[i][1]);
+  for(var i=0,l=_events.length; i<l; i++){
+    M.on(_events[i][0], _events[i][1]);
   }
 
   // 数据通信规范的版本。
@@ -247,10 +247,12 @@ define(function(require, exports, module) {
       e.file = path(e.file);
     }
 
-    M.trigger(e.profile, data);
-
     data = merge(data, e);
     data.rnd = rand(); // 避免缓存。
+
+    _evt.trigger("*", data);
+    _evt.trigger(e.profile, data);
+
     send(LOG_SERVER, data, function(){
       sending = false;
       timedSend();
