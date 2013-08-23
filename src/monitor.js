@@ -9,7 +9,7 @@ define(function(require, exports, module) {
   var Events = require("events");
 
   // 避免未引用先行脚本抛出异常。
-  if(!win.monitor){M = win.monitor = {};}
+  if(!M){M = {};}
   if(!M._DATAS){M._DATAS = [];}
   if(!M._EVENTS){M._EVENTS = [];}
 
