@@ -65,8 +65,11 @@
    */
   function stacktrace(call){
     var stack = [];
+    var deep = 0;
+    var max_deep = 20;
 
     while(call.arguments && call.arguments.callee && call.arguments.callee.caller){
+
       call = call.arguments.callee.caller;
       stack.push("at " + function_name(call));
 
@@ -74,6 +77,8 @@
       // c.caller will equal a rather than null when we reach the end
       // of the stack. The following line works around this.
       if (call.caller === call){break;}
+
+      if((deep++) > max_deep){break;}
     }
     return stack.join("\n");
   }
