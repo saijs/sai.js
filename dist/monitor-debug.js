@@ -1,4 +1,4 @@
-define("alipay/monitor/2.2.0/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
     var win = window;
     var doc = document;
     var loc = win.location;
@@ -6,9 +6,13 @@ define("alipay/monitor/2.2.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
     var detector = require("arale/detector/1.2.1/detector-debug");
     var Events = require("arale/events/1.1.0/events-debug");
     // 避免未引用先行脚本抛出异常。
-    if (!win.monitor) {
-        M = win.monitor = {};
+    if (!M) {
+        M = {};
+    }
+    if (!M._DATAS) {
         M._DATAS = [];
+    }
+    if (!M._EVENTS) {
         M._EVENTS = [];
     }
     var _events = M._EVENTS;
