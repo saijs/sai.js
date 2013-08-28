@@ -2,7 +2,7 @@
 
 ---
 
-支付宝前端监控脚本。
+通用前端监控采集脚本。
 
 前端监控脚本提供以下监控特性：
 
@@ -62,8 +62,30 @@ JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScri
 
 ### monitor.on(String eventName, Function handler)
 
-监控到特定类型的数据会触发的特定事件。内置支持的事件类型包括：
+监控到特定类型的数据时，会触发的特定事件。内置支持的事件类型包括：
 
 * `*`: 发送所有类型的数据都会触发。
 * `jserror`: 发送 JavaScript 异常数据前触发。
 * `log`: 发送自定义 log 监控数据会触发。
+
+
+### monitor.off(String eventName [, Function handler])
+
+取消通过 on 绑定的事件。
+
+### monitor.lost(String uri)
+
+页面加载特定资源失败时，可以调用这个方法。
+缺失的资源对于异常分析有较大帮助。
+
+范例：
+
+```html
+<script src="sea.js" onerror="window.monitor && monitor.lost && monitor.lost(this.src)"></script>
+<script>
+// seajs 2.1 开始支持，但 error 事件仍有缺陷，下面的实例代码仅做演示。
+seajs.on("error", function(module){
+  window.monitor && monitor.lost && monitor.lost(module.uri);
+});
+</script>
+```
