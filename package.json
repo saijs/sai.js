@@ -4,8 +4,14 @@
   "version": "2.2.1",
   "description": "支付宝前端监控脚本",
   "homepage": "https://github.com/totorojs/monitor.js",
-  "author": "",
-  "repository": "git://github.com/totorojs/monitor.js.git",
+  "author": "闲耘 <hotoo.cn@gmail.com>",
+  "maintainers": [
+    "冒顿 <hotoo.cn@gmail.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/totorojs/monitor.js.git"
+  },
   "bugs": "",
   "keywords": ["utility"],
   "licenses": "MIT",
