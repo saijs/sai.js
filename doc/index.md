@@ -20,6 +20,7 @@
 1. [script.onerror](script-onerror.md)
 1. [Stack Trace](stack-trace.md)
 1. [SourceMap](sourcemap.md)
+1. [script-crossorigin](script-crossorigin.md)
 
 
 ## 参考
