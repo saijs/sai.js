@@ -9,7 +9,8 @@ button{
 }
 </style>
 
-<script type="text/javascript" src="../src/seer.js"></script>
+<script type="text/javascript" src="../src/seer-monitor.js"></script>
+<script type="text/javascript" src="../src/seer-jsniffer.js"></script>
 
 
 ````javascript
