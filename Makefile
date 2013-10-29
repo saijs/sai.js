@@ -3,7 +3,7 @@ PROJ_ROOT=$(CURDIR)
 
 
 build:
-	@echo 'building...'
+	@spm build
 	@googlecc ${PROJ_ROOT}/src/seer-monitor.js ${PROJ_ROOT}/dist/seer-monitor.js
 	@googlecc ${PROJ_ROOT}/src/seer-jsniffer.js ${PROJ_ROOT}/dist/seer-jsniffer.js
 	@cat ${PROJ_ROOT}/dist/seer-monitor.js > ${PROJ_ROOT}/dist/seer.js
@@ -11,7 +11,6 @@ build:
 	@rm ${PROJ_ROOT}/dist/seer-monitor.js ${PROJ_ROOT}/dist/seer-jsniffer.js
 	@cat ${PROJ_ROOT}/src/seer-monitor.js > ${PROJ_ROOT}/dist/seer-debug.js
 	@cat ${PROJ_ROOT}/src/seer-jsniffer.js >> ${PROJ_ROOT}/dist/seer-debug.js
-	@spm build
 
 build-doc:
 	@nico build -v -C $(THEME)/nico.js
