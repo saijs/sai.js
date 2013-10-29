@@ -1,6 +1,6 @@
-define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
     var win = window;
-    var doc = document;
+    var doc = win.document;
     var loc = win.location;
     var M = win.monitor;
     var detector = require("arale/detector/1.2.1/detector-debug");
@@ -25,7 +25,12 @@ define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-de
     }
     // 数据通信规范的版本。
     var version = "2.0";
-    var LOG_SERVER = "https://magentmng.alipay.com/m.gif";
+    var protocol = String(loc.protocol).toLowerCase();
+    // 不直接使用 `//magentmng.alipay.com`，是有 file 协议的场景。
+    if (protocol !== "https:") {
+        protocol = "http:";
+    }
+    var LOG_SERVER = protocol + "//magentmng.alipay.com/m.gif";
     var URLLength = detector.engine.trident ? 2083 : 8190;
     var url = path(loc.href);
     // 是否启用监控。
@@ -35,92 +40,34 @@ define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-de
     function typeOf(obj) {
         return Object.prototype.toString.call(obj);
     }
-    /**
-   * 深度复制 JavaScript 对象。
-   *
-   * @param {Object} obj, 被复制的对象。
-   * @return {Object} obj 副本。
-   */
-    function clone(obj) {
-        var ret;
-        if (null === obj) {
-            return null;
-        }
-        switch (typeOf(obj)) {
-          case "[object String]":
-          case "object Number":
-          case "[object Boolean]":
-            ret = obj;
-            break;
-
-          case "[object Array]":
-            ret = [];
-            //ret = Array.prototype.slice.call(obj, 0);
-            for (var i = obj.length - 1; i >= 0; i--) {
-                ret[i] = clone(obj[i]);
-            }
-            break;
-
-          case "[object RegExp]":
-            ret = new RegExp(obj.source, (obj.ignoreCase ? "i" : "") + (obj.global ? "g" : "") + (obj.multiline ? "m" : ""));
-            break;
-
-          case "[object Date]":
-            ret = new Date(obj.valueOf());
-            break;
-
-          case "[object Error]":
-            obj = ret;
-            break;
-
-          case "[object Object]":
-            ret = {};
-            for (var k in obj) {
-                if (has(obj, k)) {
-                    ret[k] = clone(obj[k]);
+    // 合并 oa, ob 两个对象的属性到新对象，不修改原有对象。
+    // @param {Object} target, 目标对象。
+    // @param {Object} object, 来源对象。
+    // @return {Object} 返回目标对象，目标对象附带有来源对象的属性。
+    function merge(oa, ob) {
+        var result = {};
+        for (var i = 0, o, l = arguments.length; i < l; i++) {
+            o = arguments[i];
+            for (var k in o) {
+                if (has(o, k)) {
+                    result[k] = o[k];
                 }
             }
-            break;
-
-          default:
-            throw new Error("Not support the type.");
         }
-        return ret;
+        return result;
     }
-    /**
-   * 合并 object 对象的属性到 target 对象。
-   *
-   * @param {Object} target, 目标对象。
-   * @param {Object} object, 来源对象。
-   * @return {Object} 返回目标对象，目标对象附带有来源对象的属性。
-   */
-    function merge(target, object) {
-        if (!object) {
-            return target;
-        }
-        for (var k in object) {
-            if (has(object, k)) {
-                target[k] = object[k];
-            }
-        }
-        return target;
-    }
-    /**
-   * simple random string.
-   * @return {String}
-   */
+    // simple random string.
+    // @return {String}
     function rand() {
         return ("" + Math.random()).slice(-6);
     }
-    /**
-   * 获得资源的路径（不带参数和 hash 部分）
-   * 另外新版 Arale 通过 nginx 提供的服务，支持类似：
-   * > https://static.alipay.com/ar??arale.js,a.js,b.js
-   * 的方式请求资源，需要特殊处理。
-   *
-   * @param {String} uri, 仅处理绝对路径。
-   * @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
-   */
+    // 获得资源的路径（不带参数和 hash 部分）
+    // 另外新版 Arale 通过 nginx 提供的服务，支持类似：
+    // > https://static.alipay.com/ar??arale.js,a.js,b.js
+    // 的方式请求资源，需要特殊处理。
+    //
+    // @param {String} uri, 仅处理绝对路径。
+    // @return {String} 返回 uri 的文件路径，不包含参数和 jsessionid。
     function path(uri) {
         if (undefined === uri || typeof uri !== "string") {
             return "";
@@ -150,10 +97,6 @@ define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-de
         var idx = Math.min(idxSessionID, idxMin, idxHash, idxQ);
         return idx < 0 ? uri : uri.substr(0, idx);
     }
-    //function innerText(elem){
-    //if(!elem){return "";}
-    //return elem.innerText || elem.textContent || "";
-    //}
     // 必要的字符串转义，保证发送的数据是安全的。
     // @param {String} str.
     // @return {String}
@@ -184,25 +127,16 @@ define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-de
         return Object.prototype.hasOwnProperty.call(obj, key);
     }
     // /UTILS -------------------------------------------------------
-    //function serverNumber(){
-    //var servName = doc.getElementById("ServerNum");
-    //servName = innerText(servName).split("-");
-    //servName = servName[0] || loc.hostname;
-    //return servName;
-    //}
     var DEFAULT_DATA = {
         url: url,
         ref: path(doc.referrer) || "-",
         clnt: detector.device.name + "/" + detector.device.fullVersion + "|" + detector.os.name + "/" + detector.os.fullVersion + "|" + detector.browser.name + "/" + detector.browser.fullVersion + "|" + detector.engine.name + "/" + detector.engine.fullVersion + (detector.browser.compatible ? "|c" : ""),
         v: version
     };
-    /**
-   * 创建图片请求发送数据。
-   *
-   * @param {String} url, 日志服务器 URL 地址。
-   * @param {Object} data, 附加的监控数据。
-   * @param {Function} callback
-   */
+    // 创建 HTTP GET 请求发送数据。
+    // @param {String} url, 日志服务器 URL 地址。
+    // @param {Object} data, 附加的监控数据。
+    // @param {Function} callback
     function send(host, data, callback) {
         if (!callback) {
             callback = function() {};
@@ -238,13 +172,12 @@ define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-de
             return;
         }
         sending = true;
-        var data = clone(DEFAULT_DATA);
         // 理论上应该在收集异常消息时修正 file，避免连接带有参数。
         // 但是收集部分在 seer 中，不适合放置大量的脚本。
         if (e.profile === "jserror") {
             e.file = path(e.file);
         }
-        data = merge(data, e);
+        var data = merge(DEFAULT_DATA, e);
         data.rnd = rand();
         // 避免缓存。
         _evt.trigger("*", data);
@@ -260,12 +193,10 @@ define("alipay/monitor/2.2.1/monitor-debug", [ "arale/detector/1.2.1/detector-de
         _push.apply(M._DATAS, arguments);
         timedSend();
     };
-    /**
-   * 启动监控进程，开始发送数据。
-   * @param {Boolean} state, 启动状态标识。
-   *    为 `false` 时停止监控。
-   *    否则启动监控。
-   */
+    // 启动监控进程，开始发送数据。
+    // @param {Boolean} state, 启动状态标识。
+    //    为 `false` 时停止监控。
+    //    否则启动监控。
     M.boot = function(state) {
         monitoring = state !== false;
     };
