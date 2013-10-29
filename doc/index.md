@@ -6,6 +6,7 @@
 ## 目录
 
 1. [简介](intro.md)
+1. [安装部署](install.md)
 1. 数据采集
 1. [数据通信规格(v1)](data-specification-v1.md)
 1. [数据通信规格(v2)](data-specification-v2.md)
