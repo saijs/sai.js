@@ -43,63 +43,22 @@ define(function(require, exports, module) {
     return Object.prototype.toString.call(obj);
   }
 
-  // 深度复制 JavaScript 对象。
-  //
-  // @param {Object} obj, 被复制的对象。
-  // @return {Object} obj 副本。
-  function clone(obj){
-    var ret;
-    if(null === obj){return null;}
-    switch(typeOf(obj)){
-    case "[object String]":
-    case "object Number":
-    case "[object Boolean]":
-      ret = obj;
-      break;
-    case "[object Array]":
-      ret = [];
-      //ret = Array.prototype.slice.call(obj, 0);
-      for(var i=obj.length-1; i>=0; i--){
-        ret[i] = clone(obj[i]);
-      }
-      break;
-    case "[object RegExp]":
-      ret = new RegExp(obj.source, (obj.ignoreCase ? "i" : "")+
-        (obj.global ? "g" : "") + (obj.multiline ? "m" : ""));
-      break;
-    case "[object Date]":
-      ret = new Date(obj.valueOf());
-      break;
-    case "[object Error]":
-      obj = ret;
-      break;
-    case "[object Object]":
-      ret = {};
-      for(var k in obj){
-        if(has(obj, k)){
-          ret[k] = clone(obj[k]);
-        }
-      }
-      break;
-    default:
-      throw new Error("Not support the type.");
-    }
-    return ret;
-  }
-
-  // 合并 object 对象的属性到 target 对象。
-  //
+  // 合并 oa, ob 两个对象的属性到新对象，不修改原有对象。
   // @param {Object} target, 目标对象。
   // @param {Object} object, 来源对象。
   // @return {Object} 返回目标对象，目标对象附带有来源对象的属性。
-  function merge(target, object){
-    if(!object){return target;}
-    for(var k in object){
-      if(has(object, k)){
-        target[k] = object[k];
+  function merge(oa, ob){
+    var result = {};
+
+    for(var i=0,o,l=arguments.length; i<l; i++){
+      o = arguments[i];
+      for(var k in o){
+        if(has(o, k)){
+          result[k] = o[k];
+        }
       }
     }
-    return target;
+    return result;
   }
 
   // simple random string.
@@ -220,14 +179,13 @@ define(function(require, exports, module) {
     if(!e){return;}
     sending = true;
 
-    var data = clone(DEFAULT_DATA);
     // 理论上应该在收集异常消息时修正 file，避免连接带有参数。
     // 但是收集部分在 seer 中，不适合放置大量的脚本。
     if(e.profile === "jserror"){
       e.file = path(e.file);
     }
 
-    data = merge(data, e);
+    var data = merge(DEFAULT_DATA, e);
     data.rnd = rand(); // 避免缓存。
 
     _evt.trigger("*", data);
