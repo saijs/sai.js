@@ -9,7 +9,8 @@ button{
 }
 </style>
 
-<script type="text/javascript" src="../src/seer.js"></script>
+<script type="text/javascript" src="../src/seer-monitor.js"></script>
+<script type="text/javascript" src="../src/seer-jsniffer.js"></script>
 
 
 ````javascript
@@ -33,7 +34,7 @@ button{
 
 ----
 
-<script type="text/javascript" onerror="window.monitor && monitor.lost(this.src)" src="http://example.com/123.js"></script>
+<script type="text/javascript" onerror="window.monitor && monitor.lost(this.src)" src="http://example.com/404.js"></script>
 
 <button type="button" id="btn-ex1">throw new Error()</button>
 <button type="button" id="btn-ex2">monitor.error(new Error())</button>
@@ -49,11 +50,9 @@ button{
 
 <script type="text/javascript">
 seajs.on("error", function(module){
-  if(module.status === 5){
-    window.monitor && monitor.lost(module.uri);
-  }
+  window.monitor && monitor.lost(module.uri);
 });
-seajs.use("http://www.example.com/abc");
+seajs.use("http://www.example.com/404");
 
 seajs.use(["jquery", "monitor"], function($, monitor){
   $("#btn-ex1").click(function(clickEx1){
