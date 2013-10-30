@@ -2,7 +2,7 @@
   "family": "alipay",
   "name": "monitor",
   "version": "2.3.0",
-  "description": "支付宝前端监控脚本",
+  "description": "通用前端监控脚本",
   "homepage": "https://github.com/totorojs/monitor.js",
   "author": "闲耘 <hotoo.cn@gmail.com>",
   "maintainers": [
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "https://github.com/totorojs/monitor.js.git"
   },
-  "bugs": "",
+  "bugs": "https://github.com/totorojs/monitor.js/issues",
   "keywords": ["utility"],
   "licenses": "MIT",
   "scripts": {
