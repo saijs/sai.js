@@ -33,10 +33,6 @@ define(function(require, exports, module) {
   var URLLength = detector.engine.trident ? 2083 : 8190;
   var url = path(loc.href);
 
-  // 是否启用监控。
-  // 采样命中后调用 boot() 方法修改为 true 后开发发送监控数据。
-  var monitoring = false;
-
   // UTILS -------------------------------------------------------
 
   function typeOf(obj){
@@ -173,7 +169,7 @@ define(function(require, exports, module) {
    * 分时发送队列中的数据，避免 IE(6) 的连接请求数限制。
    */
   function timedSend(){
-    if(!monitoring || sending){return;}
+    if(sending){return;}
 
     var e = M._DATAS.shift();
     if(!e){return;}
@@ -208,14 +204,6 @@ define(function(require, exports, module) {
   M._DATAS.push = function(){
     _push.apply(M._DATAS, arguments);
     timedSend();
-  };
-
-  // 启动监控进程，开始发送数据。
-  // @param {Boolean} state, 启动状态标识。
-  //    为 `false` 时停止监控。
-  //    否则启动监控。
-  M.boot = function(state){
-    monitoring = (state !== false);
   };
 
   win.monitor = M;
