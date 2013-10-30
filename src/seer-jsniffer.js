@@ -58,7 +58,7 @@
   // @param {Number} line, 异常所在行。
   // @param {Number,String} number, 异常编码，IE 支持。
   // @return {Object} 主要用于单元测试，本身可以不返回。
-  function error(catchType, message, file, line, number, stack){
+  function error(catchType, message, file, line, column, number, stack){
     if(!stack && arguments.callee.caller){
       stack = stacktrace(arguments.callee.caller);
     }
@@ -69,6 +69,7 @@
       msg: message || "",
       file: file || "",
       line: line || 0,
+      col: column || 0,
       num: number || "",
       stack: stack || "",
       lang: navigator.language || navigator.browserLanguage || "",
@@ -94,8 +95,9 @@
     return error(
       "catched",
       ex.message || ex.description,
-      ex.fileName,
-      ex.lineNumber || ex.line,
+      ex.filename || ex.fileName || ex.sourceURL,
+      ex.lineno || ex.lineNumber || ex.line,
+      ex.colno || ex.columnNumber,
       ex.number,
       ex.stack || ex.stacktrace
     );
@@ -105,8 +107,8 @@
   // @return {Boolean} 返回 `true` 则捕获异常，浏览器控制台不显示异常信息。
   //                   返回 `false` 则不捕获异常，浏览器控制台显示异常信息。
   //                   建议返回 `false`。
-  global.onerror = function(message, file, line) {
-    error("global", message, file, line);
+  global.onerror = function(message, file, line, column) {
+    error("global", message, file, line, column);
     return false;
   };
 
