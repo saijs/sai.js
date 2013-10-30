@@ -188,8 +188,14 @@ define(function(require, exports, module) {
     var data = merge(DEFAULT_DATA, e);
     data.rnd = rand(); // 避免缓存。
 
-    _evt.trigger("*", data);
-    _evt.trigger(e.profile, data);
+    // 触发事件返回 false 时，取消后续执行。
+    // 要求特定 profile 的事件，和全局事件都被触发。
+    var eventResult = _evt.trigger(e.profile, data);
+    eventResult = _evt.trigger("*", data) && eventResult;
+    if(!eventResult){
+      sending = false;
+      return timedSend();
+    }
 
     send(LOG_SERVER, data, function(){
       sending = false;
