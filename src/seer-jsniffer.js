@@ -16,6 +16,7 @@
     lost_resources_cache[uri] = true;
 
     lost_resources.push(uri);
+    return lost_resources;
   };
 
   // 获得函数名。
