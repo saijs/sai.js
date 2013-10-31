@@ -6,8 +6,7 @@
 
 为了和整体的 totoro 质量体系保持一致，特为前端监控脚本取小名为 `chibi`，
 龙猫中最小的那只龙猫（chibi totoro）。
-
-chibi 体型小巧，白色透明正好与前端监控的不可见特性匹配。
+chibi 体型小巧，白色透明特质正好与前端监控的小巧、不可见特质相匹配。
 
 ![chibi](resources/chibi.jpg)
 
