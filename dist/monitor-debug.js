@@ -33,9 +33,6 @@ define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
     var LOG_SERVER = protocol + "//magentmng.alipay.com/m.gif";
     var URLLength = detector.engine.trident ? 2083 : 8190;
     var url = path(loc.href);
-    // 是否启用监控。
-    // 采样命中后调用 boot() 方法修改为 true 后开发发送监控数据。
-    var monitoring = false;
     // UTILS -------------------------------------------------------
     function typeOf(obj) {
         return Object.prototype.toString.call(obj);
@@ -164,7 +161,7 @@ define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
    * 分时发送队列中的数据，避免 IE(6) 的连接请求数限制。
    */
     function timedSend() {
-        if (!monitoring || sending) {
+        if (sending) {
             return;
         }
         var e = M._DATAS.shift();
@@ -180,8 +177,14 @@ define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
         var data = merge(DEFAULT_DATA, e);
         data.rnd = rand();
         // 避免缓存。
-        _evt.trigger("*", data);
-        _evt.trigger(e.profile, data);
+        // 触发事件返回 false 时，取消后续执行。
+        // 要求特定 profile 的事件，和全局事件都被触发。
+        var eventResult = _evt.trigger(e.profile, data);
+        eventResult = _evt.trigger("*", data) && eventResult;
+        if (!eventResult) {
+            sending = false;
+            return timedSend();
+        }
         send(LOG_SERVER, data, function() {
             sending = false;
             timedSend();
@@ -192,13 +195,6 @@ define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
     M._DATAS.push = function() {
         _push.apply(M._DATAS, arguments);
         timedSend();
-    };
-    // 启动监控进程，开始发送数据。
-    // @param {Boolean} state, 启动状态标识。
-    //    为 `false` 时停止监控。
-    //    否则启动监控。
-    M.boot = function(state) {
-        monitoring = state !== false;
     };
     win.monitor = M;
     module.exports = M;
