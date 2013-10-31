@@ -27,7 +27,6 @@ button{
   var rate = 1;
   if(!hit(rate)){return;}
   seajs.use("monitor", function(monitor){
-    monitor.boot(); // 启动监控。
   });
 })();
 ````

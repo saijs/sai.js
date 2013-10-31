@@ -26,8 +26,6 @@ button{
       meta.error_id = "error_id";
     });
 
-    monitor.boot(); // 启动监控。
-
   });
 
 })();
