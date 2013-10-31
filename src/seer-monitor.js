@@ -21,7 +21,6 @@
   // @param {String} profile, 监控类型，默认为 `log`。
   // @return {Object}
   M.log = function(seed, profile){
-
     if(!seed){return;}
 
     // 取消老版产品监控。
@@ -30,7 +29,7 @@
     var data;
     if(Object.prototype.toString.call(seed) === "[object Object]"){
       data = seed;
-      data.profile = seed.profile || DEFAULT_PROFILE;
+      data.profile = profile || data.profile || DEFAULT_PROFILE;
     }else{
       data = {
         profile: profile || DEFAULT_PROFILE,
