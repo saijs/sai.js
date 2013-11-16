@@ -8,7 +8,7 @@
 龙猫中最小的那只龙猫（chibi totoro）。
 chibi 体型小巧，白色透明特质正好与前端监控的小巧、不可见特质相匹配。
 
-![chibi](resources/chibi.jpg)
+![chibi](resources/chibi.png)
 
 ## 概述
 
