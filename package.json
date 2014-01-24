@@ -1,7 +1,7 @@
 {
   "family": "alipay",
   "name": "monitor",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "通用前端监控脚本",
   "homepage": "https://github.com/totorojs/monitor.js",
   "author": "闲耘 <hotoo.cn@gmail.com>",
