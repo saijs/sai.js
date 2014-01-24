@@ -206,6 +206,9 @@ define(function(require, exports, module) {
     timedSend();
   };
 
+  // 主动发送已捕获的异常。
+  timedSend();
+
   win.monitor = M;
   module.exports = M;
 });
