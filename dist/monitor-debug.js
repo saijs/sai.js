@@ -1,4 +1,4 @@
-define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
+define("alipay/monitor/2.3.1/monitor-debug", [ "arale/detector/1.2.1/detector-debug", "arale/events/1.1.0/events-debug" ], function(require, exports, module) {
     var win = window;
     var doc = win.document;
     var loc = win.location;
@@ -196,6 +196,8 @@ define("alipay/monitor/2.3.0/monitor-debug", [ "arale/detector/1.2.1/detector-de
         _push.apply(M._DATAS, arguments);
         timedSend();
     };
+    // 主动发送已捕获的异常。
+    timedSend();
     win.monitor = M;
     module.exports = M;
 });
