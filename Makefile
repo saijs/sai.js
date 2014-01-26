@@ -18,7 +18,7 @@ build-doc:
 debug:
 	@nico server -C $(THEME)/nico.js --watch debug
 
-publish: build
+publish:
 	@spm publish -s alipay
 
 server:
