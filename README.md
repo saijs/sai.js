@@ -2,6 +2,9 @@
 
 ---
 
+[![Build Status](https://secure.travis-ci.org/totorojs/monitor.png?branch=master)](https://travis-ci.org/totorojs/monitor)
+[![Coverage Status](https://coveralls.io/repos/totorojs/monitor/badge.png?branch=master)](https://coveralls.io/r/totorojs/monitor)
+
 通用前端监控采集脚本。
 
 为了和整体的 totoro 质量体系保持一致，特为前端监控脚本取小名为 `chibi`，
