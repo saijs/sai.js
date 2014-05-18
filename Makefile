@@ -1,6 +1,9 @@
-THEME = $(HOME)/.spm/themes/arale
+version = $(shell cat package.json | grep version | awk -F'"' '{print $$4}')
 PROJ_ROOT=$(CURDIR)
 
+
+install:
+	@spm install
 
 build:
 	@spm build
@@ -13,27 +16,19 @@ build:
 	@cat ${PROJ_ROOT}/src/seer-jsniffer.js >> ${PROJ_ROOT}/dist/seer-debug.js
 
 build-doc:
-	@nico build -v -C $(THEME)/nico.js
-
-debug:
-	@nico server -C $(THEME)/nico.js --watch debug
+	@spm doc build
 
 publish:
-	@spm publish -s alipay
-
-server:
-	@nico server -C $(THEME)/nico.js
+	@spm publish
+	@spm doc publish
+	@git tag $(version)
+	@git push origin $(version)
 
 watch:
-	@nico server -C $(THEME)/nico.js --watch
+	@spm doc watch
 
 publish-doc: clean build-doc
-	@rm -fr _site/sea-modules
-	@spm publish --doc _site -s alipay
-
-publish-pages: clean build-doc
-	@ghp-import _site
-	@git push origin gh-pages
+	@spm doc publish
 
 clean:
 	@rm -fr _site
@@ -42,7 +37,7 @@ clean:
 reporter = spec
 url = tests/runner.html
 test:
-	@mocha-phantomjs --reporter=${reporter} http://127.0.0.1:8000/${url}
+	@spm test
 
 coverage:
 	@rm -fr _site/src-cov

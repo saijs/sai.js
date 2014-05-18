@@ -1,7 +1,6 @@
 {
-  "family": "alipay",
   "name": "monitor",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "通用前端监控脚本",
   "homepage": "https://github.com/totorojs/monitor",
   "author": "闲耘 <hotoo.cn@gmail.com>",
@@ -16,13 +15,16 @@
   "keywords": ["utility"],
   "licenses": "MIT",
   "scripts": {
-    "prepublish": "make build"
   },
   "spm": {
-    "output": ["monitor.js"],
-    "alias": {
-      "detector": "arale/detector/1.2.1/detector",
-      "events": "arale/events/1.1.0/events"
-    }
+    "main": "monitor.js",
+    "dependencies": {
+      "detector": "2.0.1",
+      "arale-events": "1.2.0"
+    },
+    "devDependencies": {
+      "expect.js": "0.3.1"
+    },
+    "tests": "tests/*-spec.js"
   }
 }
