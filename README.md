@@ -3,7 +3,7 @@
 
 ---
 
-[![spm package](http://spmjs.io/badge/zupu)](http://spmjs.io/package/zupu)
+[![spm package](http://spmjs.io/badge/monitor)](http://spmjs.io/package/monitor)
 [![Build Status](https://secure.travis-ci.org/totorojs/monitor.png?branch=master)](https://travis-ci.org/totorojs/monitor)
 [![Coverage Status](https://coveralls.io/repos/totorojs/monitor/badge.png?branch=master)](https://coveralls.io/r/totorojs/monitor)
 
