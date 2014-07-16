@@ -1,0 +1,31 @@
+{
+  "indent": 2,
+  "smarttabs": true,
+
+  "latedef": "nofunc",
+  "undef": true,
+  "unused": true,
+
+  "trailing": true,
+
+  "laxcomma": false,
+
+  "curly": true,
+
+  "eqeqeq": true,
+  "eqnull": true,
+
+  "asi": true,
+
+  "boss": true,
+
+  "expr": true,
+
+  "sub": true,
+
+  "-W065": true,
+
+  "browser": true,
+  "devel": true,
+  "nonstandard": true
+}
