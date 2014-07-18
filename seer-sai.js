@@ -1,9 +1,9 @@
 
 (function(global){
 
-  if(global.monitor){return;}
+  if(global.Sai){return;}
 
-  var M = global.monitor = {};
+  var M = global.Sai = {};
   M._DATAS = [];
 
 

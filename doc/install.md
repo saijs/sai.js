@@ -34,9 +34,9 @@
   <script type="text/javascript">
 
   // 如果前置脚本未准备好，建议不加载后置脚本。
-  // 如果需要采样监控，请在采样命中后 use 加载 monitor 模块。
-  if(window.monitor && rateHited){
-    seajs.use(["monitor"], function(monitor){
+  // 如果需要采样监控，请在采样命中后 use 加载 Sai 模块。
+  if(window.Sai && rateHited){
+    seajs.use(["sai"], function(Sai){
     });
   }
 

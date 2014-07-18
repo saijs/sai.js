@@ -1,18 +1,16 @@
 
-# monitor: 通用前端监控采集脚本。
+# Sai: 通用前端监控采集脚本。
 
 ---
 
-[![spm package](http://spmjs.io/badge/monitor)](http://spmjs.io/package/monitor)
-[![Build Status](https://secure.travis-ci.org/totorojs/monitor.png?branch=master)](https://travis-ci.org/totorojs/monitor)
-[![Coverage Status](https://coveralls.io/repos/totorojs/monitor/badge.png?branch=master)](https://coveralls.io/r/totorojs/monitor)
+[![spm package](http://spmjs.io/badge/sai)](http://spmjs.io/package/sai)
+[![Build Status](https://secure.travis-ci.org/saijs/sai.js.png?branch=master)](https://travis-ci.org/saijs/sai.js)
+[![Coverage Status](https://coveralls.io/repos/saijs/sai.js/badge.png?branch=master)](https://coveralls.io/r/saijs/sai.js)
 
 
-为了和整体的 totoro 质量体系保持一致，特为前端监控脚本取小名为 `chibi`，
-龙猫中最小的那只龙猫（chibi totoro）。
-chibi 体型小巧，白色透明特质正好与前端监控的小巧、不可见特质相匹配。
+Sai 是《棋魂》中追求神乎其技的魂，千年来他隐身身后，为追求神乎其技孜孜不倦。
 
-![chibi](resources/chibi.png)
+![sai](resources/sai.png)
 
 ## 概述
 
@@ -29,9 +27,9 @@ chibi 体型小巧，白色透明特质正好与前端监控的小巧、不可�
 
 大致结构如下图：
 
-![前端监控组件结构](resources/monitor-code-structure.png)
+![前端监控组件结构](resources/code-structure.png)
 
-从上图看，前端监控(monitor 模块)提供了核心的 `log()` 接口，
+从上图看，前端监控(Sai 模块)提供了核心的 `log()` 接口，
 和 `on()`, `off()` 事件机制，其中 `log()` 接口提供了可扩展的数据传输方案，
 `on()`, `off()` 事件机制提供了简单易用的扩展能力。
 
@@ -42,9 +40,9 @@ JSniffer 同时还扩展了 `lost()` 方法，在外部模块或资源加载失�
 方法，监控到 JavaScript 异常时，附加这些缺失的资源信息，辅助异常分析。
 
 JavaScript 异常是前端监控中最重要、最常用的信息，同时为了简化 API，所以将
-这两个接口扩展附加在 monitor 模块上。
+这两个接口扩展附加在 Sai 模块上。
 
-其他的 DOMLint, SENS 等第三方独立的监控模块，都直接调用 `monitor.log()` 接口
+其他的 DOMLint, SENS 等第三方独立的监控模块，都直接调用 `Sai.log()` 接口
 传输数据。
 
 
@@ -57,7 +55,7 @@ JavaScript 异常是前端监控中最重要、最常用的信息，同时为了
     小巧的先行脚本建议内联（也可以外联）在页面头部，在所有脚本和外部资源之前。
     用于收集全局的异常，并为后续业务准备好可用的 API。
 
-* monitor.js
+* sai.js
 
     后置监控模块（这是一个 CMD 模块）可以通过异步方式加载在页面底部，
     用于处理监控日志的发送和其他扩展支持。
@@ -74,7 +72,7 @@ JavaScript 异常是前端监控中最重要、最常用的信息，同时为了
   page content...
 
   <script type="text/javascript">
-  seajs.use("monitor", function(monitor){
+  seajs.use("sai", function(Sai){
   });
   </script>
   </body>
@@ -86,13 +84,13 @@ JavaScript 异常是前端监控中最重要、最常用的信息，同时为了
 
 一般情况下，JavaScript 异常监控前置脚本已经自动收集了页面上抛出的异常，
 但也有部分场景，业务逻辑中 catch 捕获住了抛出 JavaScript 异常，避免影响后续
-的业务逻辑，但同时希望监控到这个异常场景，可以主动调用 `monitor.error()` 接口：
+的业务逻辑，但同时希望监控到这个异常场景，可以主动调用 `Sai.error()` 接口：
 
 ```javascript
 try{
   throw new Error("msg");
 }catch(ex){
-  monitor.error(ex);
+  Sai.error(ex);
 }
 ```
 
@@ -100,12 +98,12 @@ try{
 ## API
 
 
-### monitor.error(Error error)
+### Sai.error(Error error)
 
 JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScript 异常。
 
 
-### monitor.log(Object seed [, String profile])
+### Sai.log(Object seed [, String profile])
 
 前端监控的通用频次监控接口。通过这个发送监控数据，并配合对应的日志处理和数据分析，
 可以完成多种监控需求。
@@ -114,7 +112,7 @@ JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScri
 * `profile`: 日志类型，默认为 `log`。
 
 
-### monitor.on(String eventName, Function handler)
+### Sai.on(String eventName, Function handler)
 
 监控到特定类型的数据时，会触发的特定事件。内置支持的事件类型包括：
 
@@ -124,12 +122,12 @@ JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScri
 * 其他任意的自定义类型类似。
 
 
-### monitor.off(String eventName [, Function handler])
+### Sai.off(String eventName [, Function handler])
 
 取消通过 on 绑定的事件。
 
 
-### monitor.lost(String uri)
+### Sai.lost(String uri)
 
 页面加载特定资源失败时，可以调用这个方法。
 缺失的资源对于异常分析有较大帮助。
@@ -137,11 +135,11 @@ JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScri
 范例：
 
 ```html
-<script src="sea.js" onerror="window.monitor && monitor.lost && monitor.lost(this.src)"></script>
+<script src="sea.js" onerror="window.Sai && Sai.lost && Sai.lost(this.src)"></script>
 <script>
 // seajs 2.1 开始支持，但 error 事件仍有缺陷，seajs 2.2 的 error 事件较适合本场景。
 seajs.on("error", function(module){
-  window.monitor && monitor.lost && monitor.lost(module.uri);
+  window.Sai && Sai.lost && Sai.lost(module.uri);
 });
 </script>
 ```

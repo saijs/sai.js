@@ -1,7 +1,7 @@
 
-(function(global, monitor){
+(function(global, Sai){
 
-  if(!monitor){return;}
+  if(!Sai){return;}
 
   var DEFAULT_PROFILE = "jserror";
   var MAX_STACKTRACE_DEEP = 20;
@@ -11,7 +11,7 @@
   var lost_resources_cache = {};
 
   // 客户端资源加载失败时调用这个接口。
-  monitor.lost = function(uri){
+  Sai.lost = function(uri){
     if(lost_resources_cache.hasOwnProperty(uri)){return;}
     lost_resources_cache[uri] = true;
 
@@ -83,14 +83,14 @@
       ERROR_CACHE[key] = true;
     }
 
-    return monitor.log(data);
+    return Sai.log(data);
   }
 
 
   // JavaScript 异常接口，用于监控 `try/catch` 中被捕获的异常。
   // @param {Error} err, JavaScript 异常对象。
   // @return {Object} 主要用于单元测试。
-  monitor.error = function(ex){
+  Sai.error = function(ex){
     if(!(ex instanceof Error)){return;}
 
     return error(
@@ -113,4 +113,4 @@
     return false;
   };
 
-})(this, this.monitor);
+})(this, this.Sai);

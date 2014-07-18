@@ -1,23 +1,23 @@
 {
-  "name": "monitor",
-  "version": "2.4.0",
+  "name": "sai",
+  "version": "3.0.0",
   "description": "通用前端监控脚本",
-  "homepage": "https://github.com/totorojs/monitor",
+  "homepage": "https://github.com/saijs/sai.js",
   "author": "闲耘 <hotoo.cn@gmail.com>",
   "maintainers": [
-    "冒顿 <hotoo.cn@gmail.com>"
+    "闲耘 <hotoo.cn@gmail.com>"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/totorojs/monitor.git"
+    "url": "https://github.com/saijs/sai.js.git"
   },
-  "bugs": "https://github.com/totorojs/monitor/issues",
+  "bugs": "https://github.com/saijs/sai.js/issues",
   "keywords": ["utility"],
   "licenses": "MIT",
   "scripts": {
   },
   "spm": {
-    "main": "monitor.js",
+    "main": "sai.js",
     "dependencies": {
       "detector": "2.0.1",
       "arale-events": "1.2.0"

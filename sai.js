@@ -2,7 +2,7 @@
 var win = window;
 var doc = win.document;
 var loc = win.location;
-var M = win.monitor;
+var M = win.Sai;
 
 var detector = require("detector");
 var Events = require("arale-events");
@@ -207,5 +207,5 @@ M._DATAS.push = function(){
 // 主动发送已捕获的异常。
 timedSend();
 
-win.monitor = M;
+win.Sai = M;
 module.exports = M;

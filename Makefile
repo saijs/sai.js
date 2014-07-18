@@ -7,12 +7,12 @@ install:
 
 build:
 	@spm build
-	@googlecc ${PROJ_ROOT}/src/seer-monitor.js ${PROJ_ROOT}/dist/seer-monitor.js
+	@googlecc ${PROJ_ROOT}/src/seer-sai.js ${PROJ_ROOT}/dist/seer-sai.js
 	@googlecc ${PROJ_ROOT}/src/seer-jsniffer.js ${PROJ_ROOT}/dist/seer-jsniffer.js
-	@cat ${PROJ_ROOT}/dist/seer-monitor.js > ${PROJ_ROOT}/dist/seer.js
+	@cat ${PROJ_ROOT}/dist/seer-sai.js > ${PROJ_ROOT}/dist/seer.js
 	@cat ${PROJ_ROOT}/dist/seer-jsniffer.js >> ${PROJ_ROOT}/dist/seer.js
-	@rm ${PROJ_ROOT}/dist/seer-monitor.js ${PROJ_ROOT}/dist/seer-jsniffer.js
-	@cat ${PROJ_ROOT}/src/seer-monitor.js > ${PROJ_ROOT}/dist/seer-debug.js
+	@rm ${PROJ_ROOT}/dist/seer-sai.js ${PROJ_ROOT}/dist/seer-jsniffer.js
+	@cat ${PROJ_ROOT}/src/seer-sai.js > ${PROJ_ROOT}/dist/seer-debug.js
 	@cat ${PROJ_ROOT}/src/seer-jsniffer.js >> ${PROJ_ROOT}/dist/seer-debug.js
 
 build-doc:

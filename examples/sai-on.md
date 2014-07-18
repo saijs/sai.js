@@ -1,4 +1,4 @@
-# monitor.on() events.
+# Sai.on() events.
 
 ---
 
@@ -9,20 +9,20 @@ button{
 }
 </style>
 
-<script type="text/javascript" src="../src/seer-monitor.js"></script>
+<script type="text/javascript" src="../src/seer-sai.js"></script>
 <script type="text/javascript" src="../src/seer-jsniffer.js"></script>
 
 
 ````javascript
 (function(){
 
-  seajs.use("monitor", function(monitor){
+  seajs.use("sai", function(Sai){
 
-    monitor.on("*", function(meta){
+    Sai.on("*", function(meta){
       meta.uid = "user_id";
     });
 
-    monitor.on("jserror", function(meta){
+    Sai.on("jserror", function(meta){
       meta.error_id = "error_id";
     });
 
@@ -45,19 +45,19 @@ button{
 
 <script type="text/javascript">
 
-seajs.use(["jquery", "monitor"], function($, monitor){
+seajs.use(["jquery", "sai"], function($, Sai){
   $("#btn-ex1").click(function(clickEx1){
     throw new Error("throw new error message.");
   });
   $("#btn-ex2").click(function(clickEx2){
-    monitor.error(new Error("log new error message."));
+    Sai.error(new Error("log new error message."));
   });
   $("#btn-ex3").click(function(clickEx3){
     function a2(a2,a21,a22){
     try{
       notDefined();
     }catch(ex){
-      monitor.error(ex);
+      Sai.error(ex);
     }
     }
     function a1(a1){
@@ -66,7 +66,7 @@ seajs.use(["jquery", "monitor"], function($, monitor){
     a1(1);
   });
   $("#btn-log").click(function(clickEx2){
-    monitor.log("seed");
+    Sai.log("seed");
   });
 });
 </script>

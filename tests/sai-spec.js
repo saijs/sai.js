@@ -1,30 +1,30 @@
 
-require("../seer-monitor");
+require("../seer-sai");
 
-var monitor = require("../monitor");
+var Sai = require("../sai");
 var expect = require("expect.js");
 var util = require("./unitutil");
 
-describe("monitor", function() {
+describe("Sai", function() {
 
-  it("monitor.log(seed)", function(done) {
-    expect(util.equals(monitor.log("seed"), {
+  it("Sai.log(seed)", function(done) {
+    expect(util.equals(Sai.log("seed"), {
       profile: "log",
       seed: "seed"
     })).to.equal(true);
     done();
   });
 
-  it("monitor.log(seed, profile)", function(done) {
-    expect(util.equals(monitor.log("seed", "profile-0"), {
+  it("Sai.log(seed, profile)", function(done) {
+    expect(util.equals(Sai.log("seed", "profile-0"), {
       profile: "profile-0",
       seed: "seed"
     })).to.equal(true);
     done();
   });
 
-  it("monitor.log(object)", function(done) {
-    expect(util.equals(monitor.log({a:1, b:true}), {
+  it("Sai.log(object)", function(done) {
+    expect(util.equals(Sai.log({a:1, b:true}), {
       profile: "log",
       a: 1,
       b: true
@@ -32,8 +32,8 @@ describe("monitor", function() {
     done();
   });
 
-  it("monitor.log(object, profile)", function() {
-    expect(util.equals(monitor.log({a:1, b:true}, "profile-1"), {
+  it("Sai.log(object, profile)", function() {
+    expect(util.equals(Sai.log({a:1, b:true}, "profile-1"), {
       profile: "profile-1",
       a: 1,
       b: true
@@ -49,10 +49,10 @@ function test_monitor_error(){
 
   require("../seer-jsniffer");
 
-  describe("monitor: jsniffer", function() {
+  describe("Sai: jsniffer", function() {
 
-    it("monitor.error()", function(done) {
-      var ex = monitor.error(new Error("error message."));
+    it("Sai.error()", function(done) {
+      var ex = Sai.error(new Error("error message."));
 
       expect(ex.msg).to.equal("error message.");
       expect(ex.profile).to.equal("jserror");
@@ -68,9 +68,9 @@ function test_monitor_error(){
       done();
     });
 
-    it("monitor.error() repeat, without uv.", function(done) {
+    it("Sai.error() repeat, without uv.", function(done) {
       // 异常消息必须已抛出过。
-      var ex1 = monitor.error(new Error("error message."));
+      var ex1 = Sai.error(new Error("error message."));
 
       expect(ex1.msg).to.equal("error message.");
       expect(ex1.profile).to.equal("jserror");
@@ -86,11 +86,11 @@ function test_monitor_error(){
       done();
     });
 
-    it("try/catch: monitor.error()", function(done) {
+    it("try/catch: Sai.error()", function(done) {
       try{
         throw new Error("error message ii.");
       }catch(ex){
-        var ex2 = monitor.error(ex);
+        var ex2 = Sai.error(ex);
 
         expect(ex2.msg).to.equal("error message ii.");
         expect(ex2.profile).to.equal("jserror");
@@ -107,11 +107,11 @@ function test_monitor_error(){
       done();
     });
 
-    it("try/catch: monitor.error() repeat, without uv.", function(done) {
+    it("try/catch: Sai.error() repeat, without uv.", function(done) {
       try{
         throw new Error("error message ii.");
       }catch(ex){
-        var ex3 = monitor.error(ex);
+        var ex3 = Sai.error(ex);
 
         expect(ex3.msg).to.equal("error message ii.");
         expect(ex3.profile).to.equal("jserror");
@@ -136,22 +136,22 @@ function test_monitor_error(){
 
 
 function test_monitor_on(){
-  describe("monitor.on", function(){
+  describe("Sai.on", function(){
 
-    it("monitor.on('log')", function(done) {
+    it("Sai.on('log')", function(done) {
 
       // NOTE: after for timedSend finished.
       window.setTimeout(function(){
-        monitor.on("log", function(meta){
+        Sai.on("log", function(meta){
           expect("test").to.equal(meta.seed);
           done();
         });
-        monitor.log("test");
+        Sai.log("test");
       }, 500);
     });
 
-    it("monitor.on('jserror')", function(done) {
-      monitor.on("jserror", function(meta){
+    it("Sai.on('jserror')", function(done) {
+      Sai.on("jserror", function(meta){
         expect(meta.profile).to.equal("jserror");
         expect("test error message.").to.equal(meta.msg);
         done();
@@ -160,7 +160,7 @@ function test_monitor_on(){
       try{
         throw new Error("test error message.");
       }catch(ex){
-        monitor.error(ex);
+        Sai.error(ex);
       }
     });
   });
