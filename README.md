@@ -72,8 +72,17 @@ JavaScript 异常是前端监控中最重要、最常用的信息，同时为了
   page content...
 
   <script type="text/javascript">
-  seajs.use("sai", function(Sai){
-  });
+
+    // 如果没有 file 等协议场景，可以直接使用 `//log.example.com/sai.gif`。
+    var protocol = String(loc.protocol).toLowerCase();
+    if(protocol !== "https:"){ protocol = "http:"; }
+    if (window.Sai) {
+      Sai.server = protocol + "//log.example.com/sai.gif";
+    }
+
+    seajs.use("sai", function(Sai){
+    });
+
   </script>
   </body>
 </html>

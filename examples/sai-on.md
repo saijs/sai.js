@@ -14,7 +14,9 @@ button{
 
 
 ````javascript
-(function(){
+(function(window){
+
+  window.Sai && Sai.server = "//log.example.com/sai.gif";
 
   seajs.use("sai", function(Sai){
 
@@ -28,7 +30,7 @@ button{
 
   });
 
-})();
+})(this);
 ````
 
 ----

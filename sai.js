@@ -23,10 +23,6 @@ for(var i=0,l=_events.length; i<l; i++){
 
 // 数据通信规范的版本。
 var version = "2.0";
-var protocol = String(loc.protocol).toLowerCase();
-// 不直接使用 `//magentmng.alipay.com`，是有 file 协议的场景。
-if(protocol !== "https:"){ protocol = "http:"; }
-var LOG_SERVER = protocol + "//magentmng.alipay.com/m.gif";
 
 var URLLength = detector.engine.trident ? 2083 : 8190;
 var url = path(loc.href);
@@ -124,6 +120,10 @@ function has(obj, key){
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
+function warn(info){
+  win.console && console.warn && console.warn(info);
+}
+
 // /UTILS -------------------------------------------------------
 
 var DEFAULT_DATA = {
@@ -144,6 +144,7 @@ var DEFAULT_DATA = {
 // @param {Function} callback
 function send(host, data, callback){
   if(!callback){callback = function(){};}
+  if(!host){warn('Sai: required logger server.'+ host); return callback();}
   if(!data){return callback();}
 
   var d = param(data);
@@ -191,7 +192,7 @@ function timedSend(){
     return timedSend();
   }
 
-  send(LOG_SERVER, data, function(){
+  send(M.server, data, function(){
     sending = false;
     timedSend();
   });

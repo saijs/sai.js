@@ -14,7 +14,11 @@ button{
 
 
 ````javascript
-(function(){
+(function(window){
+
+  if (window.Sai) {
+    Sai.server = "//log.example.com/sai.gif";
+  }
 
   // 随机采样命中算法。
   // @param {Nuber} rate, 采样率，[0,1] 区间的数值。
@@ -28,7 +32,7 @@ button{
   if(!hit(rate)){return;}
   seajs.use("sai", function(Sai){
   });
-})();
+})(this);
 ````
 
 ----
@@ -49,7 +53,6 @@ button{
 
 <script type="text/javascript">
 seajs.on("error", function(module){
-  console.log(window.Sai)
   window.Sai && Sai.lost && Sai.lost(module.uri);
 });
 seajs.use("http://www.example.com/404");
