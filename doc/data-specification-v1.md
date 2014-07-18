@@ -143,5 +143,5 @@ JavaScript 异常，每一个脚本报错都实时发送。
 
 
 ```
-https://magentmng.example.com/m.gif?encodeURIComponent(data)
+https://log.example.com/m.gif?encodeURIComponent(data)
 ```
