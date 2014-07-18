@@ -23,6 +23,7 @@
       "arale-events": "1.2.0"
     },
     "devDependencies": {
+      "jquery": "1.7.2",
       "expect.js": "0.3.1"
     },
     "tests": "tests/*-spec.js"

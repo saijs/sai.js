@@ -9,8 +9,8 @@ button{
 }
 </style>
 
-<script type="text/javascript" src="../src/seer-sai.js"></script>
-<script type="text/javascript" src="../src/seer-jsniffer.js"></script>
+<script type="text/javascript" src="../seer-sai.js?nowrap"></script>
+<script type="text/javascript" src="../seer-jsniffer.js?nowrap"></script>
 
 
 ````javascript
@@ -33,7 +33,7 @@ button{
 
 ----
 
-<script type="text/javascript" onerror="window.Sai && Sai.lost(this.src)" src="http://example.com/404.js"></script>
+<script type="text/javascript" onerror="window.Sai && Sai.lost && Sai.lost(this.src)" src="http://example.com/404.js"></script>
 
 <button type="button" id="btn-ex1">throw new Error()</button>
 <button type="button" id="btn-ex2">Sai.error(new Error())</button>
@@ -49,11 +49,12 @@ button{
 
 <script type="text/javascript">
 seajs.on("error", function(module){
-  window.Sai && Sai.lost(module.uri);
+  console.log(window.Sai)
+  window.Sai && Sai.lost && Sai.lost(module.uri);
 });
 seajs.use("http://www.example.com/404");
 
-seajs.use(["jquery", "sai"], function($, Sai){
+seajs.use(["jquery", "../sai"], function($, Sai){
   $("#btn-ex1").click(function(clickEx1){
     throw new Error("throw new error message.");
   });

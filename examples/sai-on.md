@@ -9,8 +9,8 @@ button{
 }
 </style>
 
-<script type="text/javascript" src="../src/seer-sai.js"></script>
-<script type="text/javascript" src="../src/seer-jsniffer.js"></script>
+<script type="text/javascript" src="../seer-sai.js?nowrap"></script>
+<script type="text/javascript" src="../seer-jsniffer.js?nowrap"></script>
 
 
 ````javascript
