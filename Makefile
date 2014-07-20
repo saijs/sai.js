@@ -28,6 +28,8 @@ watch:
 	@spm doc watch
 
 publish-doc: clean build-doc
+	@ghp-import _site
+	@git push origin gh-pages
 	@spm doc publish
 
 clean:
