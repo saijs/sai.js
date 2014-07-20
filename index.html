@@ -1,0 +1,170 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>sai - Sai: 通用前端监控采集脚本。</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="nico 0.5.1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link type="image/x-icon" href="./static/css/favicon.ico" rel="icon">
+    <link rel="stylesheet" href="./static/css/normalize.css" />
+    <link rel="stylesheet" href="./static/css/site.css" />
+    <link rel="stylesheet" href="./static/css/solarized.css" />
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-50522089-2', 'spm documentation');
+  ga('send', 'pageview');
+</script>
+<script src="http://static.alipayobjects.com/seajs/seajs/2.2.0/sea.js"></script>
+
+<script>
+  (function() {
+  seajs.config({
+    base: "./"
+  });
+
+  seajs.config({
+    alias: {"arale-events":"sea-modules/arale-events/1.2.0/events.js","detector":"sea-modules/detector/2.0.1/detector.js","expect.js":"sea-modules/expect.js/0.3.1/index.js","jquery":"sea-modules/jquery/1.7.2/jquery.js"}
+  });
+})();
+</script>
+    <!--[if lt IE 9]>
+    <script src="./static/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+  <body class="spmjs">
+    <div class="body-wrapper">
+      <aside class="sidebar-wrapper">
+      <h1>
+          <a href="./">Sai</a>
+      </h1>
+        <p class="sidebar-version">Version: <a href="http://spmjs.io/package/sai" title="">3.0.0</a></p>
+        <p class="sidebar-description" data-keyword="utility">通用前端监控脚本</p>
+        <a class="sidebar-source" href="https://github.com/saijs/sai.js" target="_blank">View the Project</a>
+        <ul class="sidebar-navigation" role="navigation">
+          <li><a href="./">Doc</a></li>
+          <li><a href="examples/">Demo</a></li>
+          <li><a class="test-link" href="tests/runner.html" target="_blank">Test</a></li>
+        </ul>
+        
+
+      </aside>
+      <div class="content-wrapper">
+        
+<article class="hentry">
+  <h1 class="entry-title">Sai: 通用前端监控采集脚本。</h1>
+  <div class="entry-content">
+    <p><a href="http://spmjs.io/package/sai"><img src="http://spmjs.io/badge/sai" alt="spm package"></a>
+<a href="https://travis-ci.org/saijs/sai.js"><img src="https://secure.travis-ci.org/saijs/sai.js.png?branch=master" alt="Build Status"></a>
+<a href="https://coveralls.io/r/saijs/sai.js"><img src="https://coveralls.io/repos/saijs/sai.js/badge.png?branch=master" alt="Coverage Status"></a></p>
+<p>Sai 是《棋魂》中追求神乎其技的魂，千年来他隐身身后，为追求神乎其技孜孜不倦。</p>
+<p><img src="resources/sai.png" alt="sai"></p>
+<h2 id="概述">概述<a href="#概述" class="anchor">¶</a></h2><p>整体上，前端监控包含很多方面，例如包括：</p>
+<ul>
+<li>JavaScript 异常监控</li>
+<li>敏感信息监控</li>
+<li>DOM 合法性检查</li>
+<li>静态资源监控</li>
+<li>网站监控等</li>
+</ul>
+<p>为了更好的扩展性，和结构上的简单清晰，前端监控核心模块提供了基础的数据交换接口。
+上层的监控模块负责各自独立的监控逻辑，并通过这个接口传输监控数据。</p>
+<p>大致结构如下图：</p>
+<p><img src="resources/code-structure.png" alt="前端监控组件结构"></p>
+<p>从上图看，前端监控(Sai 模块)提供了核心的 <code>log()</code> 接口，
+和 <code>on()</code>, <code>off()</code> 事件机制，其中 <code>log()</code> 接口提供了可扩展的数据传输方案，
+<code>on()</code>, <code>off()</code> 事件机制提供了简单易用的扩展能力。</p>
+<p>JSniffer 模块提供了全局的 JavaScript 异常监控支持，并扩展了 <code>error()</code> 方法。
+为开发者监控主动捕获的异常做支持。</p>
+<p>JSniffer 同时还扩展了 <code>lost()</code> 方法，在外部模块或资源加载失败时调用 <code>lost()</code>
+方法，监控到 JavaScript 异常时，附加这些缺失的资源信息，辅助异常分析。</p>
+<p>JavaScript 异常是前端监控中最重要、最常用的信息，同时为了简化 API，所以将
+这两个接口扩展附加在 Sai 模块上。</p>
+<p>其他的 DOMLint, SENS 等第三方独立的监控模块，都直接调用 <code>Sai.log()</code> 接口
+传输数据。</p>
+<h2 id="安装">安装<a href="#安装" class="anchor">¶</a></h2><p>前端监控脚本拆分为两个部分：</p>
+<ul>
+<li><p>seer.js</p>
+<p>小巧的先行脚本建议内联（也可以外联）在页面头部，在所有脚本和外部资源之前。
+用于收集全局的异常，并为后续业务准备好可用的 API。</p>
+</li>
+<li><p>sai.js</p>
+<p>后置监控模块（这是一个 CMD 模块）可以通过异步方式加载在页面底部，
+用于处理监控日志的发送和其他扩展支持。</p>
+</li>
+</ul>
+<div class="highlight"><pre><code class="xml"><span class="tag">&lt;<span class="title">html</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">head</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">meta</span> <span class="attribute">charset</span>=<span class="value">"utf-8"</span> /&gt;</span>
+    <span class="tag">&lt;<span class="title">script</span> <span class="attribute">type</span>=<span class="value">"text/javascript"</span> <span class="attribute">src</span>=<span class="value">"dist/seer.js"</span>&gt;</span><span class="javascript"></span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">head</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">body</span>&gt;</span>
+
+  page content...
+
+  <span class="tag">&lt;<span class="title">script</span> <span class="attribute">type</span>=<span class="value">"text/javascript"</span>&gt;</span><span class="javascript">
+
+    <span class="comment">// 如果没有 file 等协议场景，可以直接使用 `//log.example.com/sai.gif`。</span>
+    <span class="keyword">var</span> protocol = String(loc.protocol).toLowerCase();
+    <span class="keyword">if</span>(protocol !== <span class="string">"https:"</span>){ protocol = <span class="string">"http:"</span>; }
+    <span class="keyword">if</span> (window.Sai) {
+      Sai.server = protocol + <span class="string">"//log.example.com/sai.gif"</span>;
+    }
+
+    seajs.use(<span class="string">"sai/3.0.0/sai"</span>, <span class="function"><span class="keyword">function</span><span class="params">(Sai)</span>{</span>
+    });
+
+  </span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">body</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">html</span>&gt;</span></code></pre></div><h2 id="使用说明">使用说明<a href="#使用说明" class="anchor">¶</a></h2><p>一般情况下，JavaScript 异常监控前置脚本已经自动收集了页面上抛出的异常，
+但也有部分场景，业务逻辑中 catch 捕获住了抛出 JavaScript 异常，避免影响后续
+的业务逻辑，但同时希望监控到这个异常场景，可以主动调用 <code>Sai.error()</code> 接口：</p>
+<div class="highlight"><pre><code class="javascript"><span class="keyword">try</span>{
+  <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">"msg"</span>);
+}<span class="keyword">catch</span>(ex){
+  Sai.error(ex);
+}</code></pre></div><h2 id="api">API<a href="#api" class="anchor">¶</a></h2><h3 id="sai-error-error-error">Sai.error(Error error)<a href="#sai-error-error-error" class="anchor">¶</a></h3><p>JavaScript 异常监控的接口，可以用于主动监控被捕获的 JavaScript 异常。</p>
+<h3 id="sai-log-object-seed-string-profile">Sai.log(Object seed [, String profile])<a href="#sai-log-object-seed-string-profile" class="anchor">¶</a></h3><p>前端监控的通用频次监控接口。通过这个发送监控数据，并配合对应的日志处理和数据分析，
+可以完成多种监控需求。</p>
+<ul>
+<li><code>seed</code>: 详情数据，可以是简单的字符串，或者 <code>key: value</code> 键值对对象。</li>
+<li><code>profile</code>: 日志类型，默认为 <code>log</code>。</li>
+</ul>
+<h3 id="sai-on-string-eventname-function-handler">Sai.on(String eventName, Function handler)<a href="#sai-on-string-eventname-function-handler" class="anchor">¶</a></h3><p>监控到特定类型的数据时，会触发的特定事件。内置支持的事件类型包括：</p>
+<ul>
+<li><code>*</code>: 发送所有类型的数据都会触发。</li>
+<li><code>jserror</code>: 发送 JavaScript 异常数据前触发。</li>
+<li><code>log</code>: 发送自定义 log 监控数据会触发。</li>
+<li>其他任意的自定义类型类似。</li>
+</ul>
+<h3 id="sai-off-string-eventname-function-handler">Sai.off(String eventName [, Function handler])<a href="#sai-off-string-eventname-function-handler" class="anchor">¶</a></h3><p>取消通过 on 绑定的事件。</p>
+<h3 id="sai-lost-string-uri">Sai.lost(String uri)<a href="#sai-lost-string-uri" class="anchor">¶</a></h3><p>页面加载特定资源失败时，可以调用这个方法。
+缺失的资源对于异常分析有较大帮助。</p>
+<p>范例：</p>
+<div class="highlight"><pre><code class="xml"><span class="tag">&lt;<span class="title">script</span> <span class="attribute">src</span>=<span class="value">"sea.js"</span> <span class="attribute">onerror</span>=<span class="value">"window.Sai &amp;&amp; Sai.lost &amp;&amp; Sai.lost(this.src)"</span>&gt;</span><span class="javascript"></span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+<span class="tag">&lt;<span class="title">script</span>&gt;</span><span class="javascript">
+<span class="comment">// seajs 2.1 开始支持，但 error 事件仍有缺陷，seajs 2.2 的 error 事件较适合本场景。</span>
+seajs.on(<span class="string">"error"</span>, <span class="function"><span class="keyword">function</span><span class="params">(module)</span>{</span>
+  window.Sai &amp;&amp; Sai.lost &amp;&amp; Sai.lost(module.uri);
+});
+</span><span class="tag">&lt;/<span class="title">script</span>&gt;</span></code></pre></div>
+  </div>
+</article>
+
+      </div>
+      
+    </div>
+    <div class="footer-wrapper">
+      <footer>
+        <p class="footer-powered"><a href="http://spmjs.io">spmjs.io</a> •
+<a href="https://github.com/spmjs/spm">spm</a> •
+<a href="http://seajs.org">Sea.js</a> •
+<a href="http://lab.lepture.com/nico/">nico</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

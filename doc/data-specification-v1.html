@@ -1,0 +1,191 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>sai - 数据通信规格(v1)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="nico 0.5.1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link type="image/x-icon" href="../static/css/favicon.ico" rel="icon">
+    <link rel="stylesheet" href="../static/css/normalize.css" />
+    <link rel="stylesheet" href="../static/css/site.css" />
+    <link rel="stylesheet" href="../static/css/solarized.css" />
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-50522089-2', 'spm documentation');
+  ga('send', 'pageview');
+</script>
+<script src="http://static.alipayobjects.com/seajs/seajs/2.2.0/sea.js"></script>
+
+<script>
+  (function() {
+  seajs.config({
+    base: "../"
+  });
+
+  seajs.config({
+    alias: {"arale-events":"sea-modules/arale-events/1.2.0/events.js","detector":"sea-modules/detector/2.0.1/detector.js","expect.js":"sea-modules/expect.js/0.3.1/index.js","jquery":"sea-modules/jquery/1.7.2/jquery.js"}
+  });
+})();
+</script>
+    <!--[if lt IE 9]>
+    <script src="../static/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+  <body class="spmjs">
+    <div class="body-wrapper">
+      <aside class="sidebar-wrapper">
+      <h1>
+          <a href="../">Sai</a>
+      </h1>
+        <p class="sidebar-version">Version: <a href="http://spmjs.io/package/sai" title="">3.0.0</a></p>
+        <p class="sidebar-description" data-keyword="utility">通用前端监控脚本</p>
+        <a class="sidebar-source" href="https://github.com/saijs/sai.js" target="_blank">View the Project</a>
+        <ul class="sidebar-navigation" role="navigation">
+          <li><a href="../">Doc</a></li>
+          <li><a href="../examples/">Demo</a></li>
+          <li><a class="test-link" href="../tests/runner.html" target="_blank">Test</a></li>
+        </ul>
+        
+<ol class="sidenav">
+  <li><a href="index.html">前端监控脚本</a></li>
+  <li><a href="intro.html">简介</a></li>
+  <li><a href="data-specification-v2.html">数据通信规格(v2)</a></li>
+  <li><a href="JSniffer.html">JSniffer</a></li>
+  <li><a href="install.html">安装部署</a></li>
+  <li><a href="data-specification-v1.html">数据通信规格(v1)</a></li>
+  <li><a href="others.html">其他</a></li>
+  <li><a href="script-crossorigin.html">script[crossorigin]</a></li>
+  <li><a href="sourcemap.html">SourceMap</a></li>
+  <li><a href="stack-trace.html">Stack Trace</a></li>
+  <li><a href="window-onerror.html">window.onerror</a></li>
+</ol>
+
+      </aside>
+      <div class="content-wrapper">
+        
+<article class="hentry">
+  <h1 class="entry-title">数据通信规格(v1)</h1>
+  <div class="entry-content">
+    <h2 id="pv-统计">PV 统计<a href="#pv-统计" class="anchor">¶</a></h2><p>用户的每次请求（采样）都会向日志服务器发送请求，用于计算 PV 值。</p>
+<div class="highlight"><pre><code class="javascript">{
+    <span class="string">"url"</span>: <span class="string">"https://www.example.com/"</span>,
+    <span class="string">"ref"</span>: <span class="string">"https://www.google.com/"</span>,
+    <span class="string">"sys"</span>: <span class="string">"personal"</span>,
+    <span class="string">"client"</span>: {
+        <span class="string">"dev"</span>: <span class="string">"pc"</span>              <span class="comment">// device name.</span>
+        <span class="string">"os"</span>: <span class="string">"Windows/5.2"</span>,     <span class="comment">// operating system name &amp; version.</span>
+        <span class="string">"scr"</span>: <span class="string">"1400x1050x32"</span>,   <span class="comment">// screen size &amp; color depth.</span>
+        <span class="string">"bro"</span>: <span class="string">"Firefox/5.3.6"</span>,  <span class="comment">// browser name &amp; version.</span>
+        <span class="string">"eng"</span>: <span class="string">"Trident/3"</span>       <span class="comment">// engine name &amp; version.</span>
+    },
+    <span class="string">"pv"</span>: <span class="number">1</span>,
+    <span class="string">"domready"</span>:<span class="number">345</span>,
+    <span class="string">"load"</span>: <span class="number">1060</span>,
+    <span class="string">"rnd"</span>: <span class="string">"random string"</span>
+}</code></pre></div><h2 id="资源统计-html-image-javascript-css-flash-cms">资源统计(HTML,Image,JavaScript,CSS,Flash,CMS)<a href="#资源统计-html-image-javascript-css-flash-cms" class="anchor">¶</a></h2><div class="highlight"><pre><code class="javascript">{
+    <span class="string">"url"</span>:<span class="string">"https://www.example.com/"</span>,
+    <span class="string">"ref"</span>: <span class="string">""</span>,
+    <span class="string">"sys"</span>: <span class="string">"cashier"</span>,
+    <span class="string">"client"</span>: {
+        <span class="string">"dev"</span>: <span class="string">"pc"</span>
+        <span class="string">"os"</span>: <span class="string">"Windows/5.2"</span>,
+        <span class="string">"scr"</span>: <span class="string">"1400x1050x32"</span>,
+        <span class="string">"bro"</span>: <span class="string">"Firefox/5.3.6"</span>,
+        <span class="string">"eng"</span>: <span class="string">"Trident/3"</span>
+    },
+    <span class="string">"htmlSize"</span>:<span class="number">1024</span>,
+    <span class="string">"res"</span>:{
+        <span class="string">"img"</span>: [<span class="string">"https://static.example.com/logo.gif"</span>,
+            <span class="string">"https://static.example.com/a.gif"</span>, <span class="string">"https://static.example.com/b.gif"</span>],
+        <span class="string">"css"</span>: [<span class="string">"https://static.example.com/a.css"</span>,
+            <span class="string">"https://static.example.com/min/?path/to/b.css,path/to/c.css"</span>,
+            <span class="string">"https://assets.example.com/??path/to/file.css,file2.css,file3.css"</span>],
+        <span class="string">"js"</span> : [<span class="string">"https://static.example.com/a.js"</span>, <span class="string">"https://static.example.com/b.js"</span>],
+        <span class="string">"fla"</span>: [<span class="string">"https://static.example.com/a.swf"</span>, <span class="string">"https://static.example.com/b.swf"</span>]
+    },
+    <span class="string">"rnd"</span>: <span class="string">"random string"</span>
+}</code></pre></div><h2 id="html-不合法">HTML 不合法<a href="#html-不合法" class="anchor">¶</a></h2><p>资源统计&amp;HTML错误的数据格式，有且仅有 1 次发送：</p>
+<div class="highlight"><pre><code class="javascript">{
+    <span class="string">"url"</span>:<span class="string">"https://www.example.com/"</span>,
+    <span class="string">"ref"</span>: <span class="string">""</span>,
+    <span class="string">"sys"</span>: <span class="string">"cashier"</span>,
+    <span class="string">"client"</span>: {
+        <span class="string">"dev"</span>: <span class="string">"iPhone"</span>
+        <span class="string">"os"</span>: <span class="string">"iOS/5.2"</span>,
+        <span class="string">"scr"</span>: <span class="string">"1400x1050x32"</span>,
+        <span class="string">"bro"</span>: <span class="string">"Safari/5.3.6"</span>,
+        <span class="string">"eng"</span>: <span class="string">"Trident/3"</span>
+    },
+    <span class="string">"htmlError"</span>:[
+        {
+            <span class="string">"ln"</span>    : <span class="number">1</span>,
+            <span class="string">"err"</span>   : <span class="number">1</span>,
+            <span class="string">"code"</span>  : <span class="string">"&lt;label&gt;no [for=id]&lt;/label&gt;"</span>
+        },
+        {
+            <span class="string">"ln"</span>    : <span class="number">2</span>,
+            <span class="string">"err"</span>   : <span class="number">2</span>,
+            <span class="string">"code"</span>  : <span class="string">"&lt;input type=\"text\" value=\"no [name=name]\" /&gt;"</span>
+        }
+    ],
+    <span class="string">"rnd"</span>: <span class="string">"random string"</span>
+}</code></pre></div><h2 id="javascript-异常">JavaScript 异常<a href="#javascript-异常" class="anchor">¶</a></h2><p>JavaScript 异常消息数据格式，可能有 0 或多次消息发送：</p>
+<div class="highlight"><pre><code class="javascript">{
+    <span class="string">"url"</span>:<span class="string">"https://www.example.com/"</span>,
+    <span class="string">"ref"</span>: <span class="string">""</span>,
+    <span class="string">"sys"</span>: <span class="string">"cashier"</span>,
+    <span class="string">"client"</span>: {
+        <span class="string">"dev"</span>: <span class="string">"pc"</span>
+        <span class="string">"os"</span>: <span class="string">"Windows/5.2"</span>,
+        <span class="string">"scr"</span>: <span class="string">"1400x1050x32"</span>,
+        <span class="string">"bro"</span>: <span class="string">"Firefox/5.3.6"</span>,
+        <span class="string">"eng"</span>: <span class="string">"Trident/3"</span>
+    },
+    <span class="string">"jsError"</span>:{
+        <span class="string">"ln"</span>:<span class="number">1</span>,
+        <span class="string">"file"</span>:<span class="string">"https://static.example.com/a.js"</span>,
+        <span class="string">"msg"</span>:<span class="string">"n is undefined."</span>
+    },
+    <span class="string">"rnd"</span>: <span class="string">"random string"</span>
+}</code></pre></div><p>JavaScript 异常，每一个脚本报错都实时发送。</p>
+<h2 id="自定义产品监控">自定义产品监控<a href="#自定义产品监控" class="anchor">¶</a></h2><div class="highlight"><pre><code class="javascript">{
+    <span class="string">"url"</span>:<span class="string">"https://www.example.com/"</span>,
+    <span class="string">"ref"</span>: <span class="string">""</span>,
+    <span class="string">"sys"</span>: <span class="string">"cashier"</span>,
+    <span class="string">"client"</span>: {
+        <span class="string">"dev"</span>: <span class="string">"pc"</span>
+        <span class="string">"os"</span>: <span class="string">"Windows/5.2"</span>,
+        <span class="string">"scr"</span>: <span class="string">"1400x1050x32"</span>,
+        <span class="string">"bro"</span>: <span class="string">"Firefox/5.3.6"</span>,
+        <span class="string">"eng"</span>: <span class="string">"Trident/3"</span>
+    },
+    <span class="string">"constom"</span>:{
+        <span class="string">"type"</span>: <span class="string">"log"</span>,              <span class="comment">// log, info, warn, error.</span>
+        <span class="string">"productLine"</span>: <span class="string">"security"</span>,  <span class="comment">// 产品线</span>
+        <span class="string">"product"</span>: <span class="string">"ukey"</span>,            <span class="comment">// 产品名称</span>
+        <span class="string">"errorCode"</span>: <span class="string">"api1-172"</span>,     <span class="comment">// 错误码</span>
+        <span class="string">"counts"</span>: <span class="number">1</span>                    <span class="comment">// 可选。错误次数，默认 1 次。</span>
+    },
+    <span class="string">"rnd"</span>: <span class="string">"random string"</span>
+}</code></pre></div><h2 id="最终将统计信息及异常报告uri编码之后发送到服务端">最终将统计信息及异常报告URI编码之后发送到服务端<a href="#最终将统计信息及异常报告uri编码之后发送到服务端" class="anchor">¶</a></h2><pre>https://log.example.com/m.gif?encodeURIComponent(data)</pre>
+  </div>
+</article>
+
+      </div>
+      
+    </div>
+    <div class="footer-wrapper">
+      <footer>
+        <p class="footer-powered"><a href="http://spmjs.io">spmjs.io</a> •
+<a href="https://github.com/spmjs/spm">spm</a> •
+<a href="http://seajs.org">Sea.js</a> •
+<a href="http://lab.lepture.com/nico/">nico</a>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
