@@ -1,9 +1,3 @@
-/**
- * @overview
- *
- * @author 闲耘™ (hotoo.cn[AT]gmail.com)
- * @version 2013/05/08
- */
 
 define(function(require, exports, module){
   function deepEquals(a, b){
