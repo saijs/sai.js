@@ -23,8 +23,6 @@
     "del": "0.1.1"
   },
   "licenses": "MIT",
-  "scripts": {
-  },
   "spm": {
     "main": "sai.js",
     "dependencies": {
