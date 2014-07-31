@@ -7,13 +7,13 @@ install:
 
 build:
 	@spm build
-	@googlecc ${PROJ_ROOT}/src/seer-sai.js ${PROJ_ROOT}/dist/seer-sai.js
-	@googlecc ${PROJ_ROOT}/src/seer-jsniffer.js ${PROJ_ROOT}/dist/seer-jsniffer.js
-	@cat ${PROJ_ROOT}/dist/seer-sai.js > ${PROJ_ROOT}/dist/seer.js
-	@cat ${PROJ_ROOT}/dist/seer-jsniffer.js >> ${PROJ_ROOT}/dist/seer.js
-	@rm ${PROJ_ROOT}/dist/seer-sai.js ${PROJ_ROOT}/dist/seer-jsniffer.js
-	@cat ${PROJ_ROOT}/src/seer-sai.js > ${PROJ_ROOT}/dist/seer-debug.js
-	@cat ${PROJ_ROOT}/src/seer-jsniffer.js >> ${PROJ_ROOT}/dist/seer-debug.js
+	@googlecc ${PROJ_ROOT}/seer-sai.js ${PROJ_ROOT}/dist/sai/$(version)/seer-sai.js
+	@googlecc ${PROJ_ROOT}/seer-jsniffer.js ${PROJ_ROOT}/dist/sai/$(version)/seer-jsniffer.js
+	@cat ${PROJ_ROOT}/dist/sai/$(version)/seer-sai.js > ${PROJ_ROOT}/dist/sai/$(version)/seer.js
+	@cat ${PROJ_ROOT}/dist/sai/$(version)/seer-jsniffer.js >> ${PROJ_ROOT}/dist/sai/$(version)/seer.js
+	@rm ${PROJ_ROOT}/dist/sai/$(version)/seer-sai.js ${PROJ_ROOT}/dist/sai/$(version)/seer-jsniffer.js
+	@cat ${PROJ_ROOT}/seer-sai.js > ${PROJ_ROOT}/dist/sai/$(version)/seer-debug.js
+	@cat ${PROJ_ROOT}/seer-jsniffer.js >> ${PROJ_ROOT}/dist/sai/$(version)/seer-debug.js
 
 build-doc:
 	@spm doc build
