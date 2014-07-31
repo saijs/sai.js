@@ -34,6 +34,7 @@
     "devDependencies": {
       "jquery": "1.7.2",
       "imagic": "1.1.0",
+      "url": "1.2.0",
       "expect.js": "0.3.1"
     },
     "tests": "tests/*-spec.js"
