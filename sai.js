@@ -59,7 +59,7 @@ function rand(){
 
 // 获得资源的路径（不带参数和 hash 部分）
 // 另外新版 Arale 通过 nginx 提供的服务，支持类似：
-// > https://static.alipay.com/ar??arale.js,a.js,b.js
+// > https://www.example.com/??a.js,b.js,c.js
 // 的方式请求资源，需要特殊处理。
 //
 // @param {String} uri, 仅处理绝对路径。
