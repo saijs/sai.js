@@ -5,7 +5,7 @@ var loc = win.location;
 var M = win.Sai;
 
 var detector = require("detector");
-var Events = require("arale-events");
+var Events = require("evt");
 
 // 避免未引用先行脚本抛出异常。
 if(!M){M = {};}
@@ -185,8 +185,8 @@ function timedSend(){
 
   // 触发事件返回 false 时，取消后续执行。
   // 要求特定 profile 的事件，和全局事件都被触发。
-  var eventResult = _evt.trigger(e.profile, data);
-  eventResult = _evt.trigger("*", data) && eventResult;
+  var eventResult = _evt.emit(e.profile, data);
+  eventResult = _evt.emit("*", data) && eventResult;
   if(!eventResult){
     sending = false;
     return timedSend();

@@ -12,7 +12,7 @@
     "url": "https://github.com/saijs/sai.js.git"
   },
   "bugs": "https://github.com/saijs/sai.js/issues",
-  "keywords": ["utility"],
+  "keywords": ["monitor", "error", "exception"],
   "devDependencies": {
     "gulp": "3.8.6",
     "gulp-uglify": "0.3.1",
@@ -27,7 +27,7 @@
     "main": "sai.js",
     "dependencies": {
       "detector": "2.0.1",
-      "arale-events": "1.2.0"
+      "evt": "0.2.2"
     },
     "devDependencies": {
       "jquery": "1.7.2",
