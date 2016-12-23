@@ -15,19 +15,18 @@ build:
 	@cat ${PROJ_ROOT}/seer-sai.js > ${PROJ_ROOT}/dist/sai/$(version)/seer-debug.js
 	@cat ${PROJ_ROOT}/seer-jsniffer.js >> ${PROJ_ROOT}/dist/sai/$(version)/seer-debug.js
 
-build-doc:
+build-doc: clean
 	@spm doc build
 
-publish:
+publish: publish-doc
 	@spm publish
-	@spm doc publish
 	@git tag $(version)
 	@git push origin $(version)
 
 watch:
 	@spm doc watch
 
-publish-doc: clean build-doc
+publish-doc: build-doc
 	@ghp-import _site
 	@git push origin gh-pages
 	@spm doc publish

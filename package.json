@@ -12,7 +12,7 @@
     "url": "https://github.com/saijs/sai.js.git"
   },
   "bugs": "https://github.com/saijs/sai.js/issues",
-  "keywords": ["monitor", "error", "exception"],
+  "keywords": ["javascript", "error", "exception", "monitor"],
   "devDependencies": {
     "gulp": "3.8.6",
     "gulp-uglify": "0.3.1",

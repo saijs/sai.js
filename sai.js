@@ -2,23 +2,17 @@
 var win = window;
 var doc = win.document;
 var loc = win.location;
-var M = win.Sai;
-
 var detector = require("detector");
 var Events = require("evt");
+var Sai = require('./seer-sai');
 
-// 避免未引用先行脚本抛出异常。
-if(!M){M = {};}
-if(!M._DATAS){M._DATAS = [];}
-if(!M._EVENTS){M._EVENTS = [];}
-
-var _events = M._EVENTS;
+var _events = Sai._EVENTS;
 var _evt = new Events();
-M.on = function(evt, handler){
+Sai.on = function(evt, handler){
   _evt.on(evt, handler);
 };
 for(var i=0,l=_events.length; i<l; i++){
-  M.on(_events[i][0], _events[i][1]);
+  Sai.on(_events[i][0], _events[i][1]);
 }
 
 // 数据通信规范的版本。
@@ -170,7 +164,7 @@ var sending = false;
 function timedSend(){
   if(sending){return;}
 
-  var e = M._DATAS.shift();
+  var e = Sai._DATAS.shift();
   if(!e){return;}
   sending = true;
 
@@ -192,21 +186,20 @@ function timedSend(){
     return timedSend();
   }
 
-  send(M.server, data, function(){
+  send(Sai.server, data, function(){
     sending = false;
     timedSend();
   });
 }
 
 // timedSend 准备好后可以替换 push 方法，自动分时发送。
-var _push = M._DATAS.push;
-M._DATAS.push = function(){
-  _push.apply(M._DATAS, arguments);
+var _push = Sai._DATAS.push;
+Sai._DATAS.push = function(){
+  _push.apply(Sai._DATAS, arguments);
   timedSend();
 };
 
 // 主动发送已捕获的异常。
 timedSend();
 
-win.Sai = M;
-module.exports = M;
+module.exports = Sai;
